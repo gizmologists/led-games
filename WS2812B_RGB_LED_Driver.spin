@@ -28,25 +28,25 @@
                                        HAVE FUN!!!                                                  }  
 CON        'Predefined colors that can be accessed from your code using rgb#constant:
                                                '  green      red      blue              
- off            = 0                            '%00000000_00000000_00000000
- red            = 255<<8                       '%00000000_11111111_00000000
- green          = 255<<16                      '%11111111_00000000_00000000 
- blue           = 255                          '%00000000_00000000_11111111 
- white          = 255<<16+255<<8+255           '%11111111_11111111_11111111 
- cyan           = 255<<16+255                  '%11111111_00000000_11111111 
- magenta        = 255<<8+255                   '%00000000_11111111_11111111 
- yellow         = 255<<16+255<<8               '%11111111_11111111_00000000 
- chartreuse     = 255<<16+127<<8               '%11111111_01111111_00000000
- orange         = 60<<16+255<<8                '%10100101_11111111_11010100        
- aquamarine     = 255<<16+127<<8+212           '%11111111_11111111_11010100
- pink           = 128<<16+255<<8+128           '%10000000_11111111_10000000
- turquoise      = 224<<16+63<<8+192            '%10000000_00111111_10000000
- realwhite      = 255<<16+200<<8+255           '%11100000_11001000_11000000
- indigo         = 170                          '%00000000_00111111_01111111
- violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
- crimson        = 153<<8                       '%00000000_10011001_00000000
+  off            = 0                            '%00000000_00000000_00000000
+  red            = 255<<8                       '%00000000_11111111_00000000
+  green          = 255<<16                      '%11111111_00000000_00000000 
+  blue           = 255                          '%00000000_00000000_11111111 
+  white          = 255<<16+255<<8+255           '%11111111_11111111_11111111 
+  cyan           = 255<<16+255                  '%11111111_00000000_11111111 
+  magenta        = 255<<8+255                   '%00000000_11111111_11111111 
+  yellow         = 255<<16+255<<8               '%11111111_11111111_00000000 
+  chartreuse     = 255<<16+127<<8               '%11111111_01111111_00000000
+  orange         = 60<<16+255<<8                '%10100101_11111111_11010100        
+  aquamarine     = 255<<16+127<<8+212           '%11111111_11111111_11010100
+  pink           = 128<<16+255<<8+128           '%10000000_11111111_10000000
+  turquoise      = 224<<16+63<<8+192            '%10000000_00111111_10000000
+  realwhite      = 255<<16+200<<8+255           '%11100000_11001000_11000000
+  indigo         = 170                          '%00000000_00111111_01111111
+  violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
+  crimson        = 153<<8                       '%00000000_10011001_00000000
 
- NUM_LEDS        = 768
+ NUM_LEDS        = 768 ''refactor me
  
 VAR
   long update           'Controls when LED values are sent (its address gets loaded into Cog 1)      
@@ -60,7 +60,7 @@ VAR
 PUB start(OutputPin,NumberOfLEDs) : okay
 '' Starts RGB LED Strip driver on a cog, returns false if no cog available
 '' Note: Requires at least a 20MHz system clock
-  _pin:=OutputPin
+  :=OutputPin
   _LEDs:=NumberOfLEDs
   LEDs:=NumberOfLEDs
   maxAddress:=NumberOfLEDs-1 
@@ -489,7 +489,7 @@ DAT
 '' a value other than 0
               org       0                 
 RGBdriver     mov       pinmask,#1          'Set direction of data pin to be an output 
-              shl       pinmask,_pin
+              shl       pinmask,
               mov       dira,pinmask
               mov       index,par           'Set index to LED variable array's base address
 
@@ -542,7 +542,7 @@ Increment     add       index,#4            'Increment index by 4 byte addresses
                       
                                             'Starred values (*) are set before cog is loaded
 _update       long      0                   'Hub RAM address of "update" will be stored here*
-_pin          long      0                   'Output pin number will be stored here*
+          long      0                   'Output pin number will be stored here*
 _LEDs         long      0                   'Total number of LEDs will be stored here*
 High1         long      0                   '~1.3 microseconds(digital 1)*
 Low1          long      0                   '~1.2 microseconds*            
