@@ -9,7 +9,8 @@ CON
   TotalLEDs=256   '<---set the maximum number of LEDs you wish to control (eg. 30 for 1m strip, 60 for 2m
                  '    strip, 120 for two 2m strips wired in series, etc.) Code has been tested up to 4m
 OBJ
-  rgb : "WS2812B_RGB_LED_Driver_v2"           'Include WS2812B_RGB_LED_Driver object and call it "rgb" for short
+  rgb : "WS2812B_RGB_LED_Driver"           'Include WS2812B_RGB_LED_Driver object and call it "rgb" for short
+  t   : "test"
 
 PUB Demo | i, j, x, maxAddress
   rgb.start(0,TotalLEDs, -1, -1)  'Start up RGB LED driver on a new cog, set data pin to be P0, 

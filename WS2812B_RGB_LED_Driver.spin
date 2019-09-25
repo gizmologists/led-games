@@ -1,9 +1,8 @@
-
 '' WS2812B_RGB_LED_Driver
 '' by Gavin T. Garner
 '' University of Virginia
 '' April 20, 2012
-'' test
+'' teste
 {  This object can be used to control a Red-Green-Blue LED light strip (such as the 1m and 2m 
    ones available from Pololu.com as parts #2540 and #2541). These strips incorporate TM1804 chips by
    Titan Micro (one for each RGB LED) and 24-bit color data is shifted into them using quick pulses
