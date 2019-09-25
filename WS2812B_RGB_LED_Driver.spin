@@ -1,3 +1,4 @@
+
 '' WS2812B_RGB_LED_Driver
 '' by Gavin T. Garner
 '' University of Virginia
@@ -10,7 +11,6 @@
    using PASM code. The advantage to this is that they can be updated and changed much more quickly
    than other types of addressable RGB LED strips. Note that this code will not control RGB LED strips
    that use WS2801 chips (such as the ones currently sold by Sparkfun.com).
-
                                     Instructions for use:
    Wiring:
          Propeller I/O pin (your choice) <---> IN  (silver wire with white stripe on Pololu Part) 
@@ -47,28 +47,20 @@ CON        'Predefined colors that can be accessed from your code using rgb#cons
  violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
  crimson        = 153<<8                       '%00000000_10011001_00000000
 
- NUM_LEDS       = 768
+ NUM_LEDS        = 768
  
 VAR
   long update           'Controls when LED values are sent (its address gets loaded into Cog 1)      
   long maxAddress       'Address of the last LED in the string                                       
   long cog              'Store cog # (so that the cog can be stopped)                                
-  long lock
-
   long LEDs             'Stores the total number of addressable LEDs
   long lights[NUM_LEDS]      'Reserve a long for each LED address in the string                           
-  long receivedLights[NUM_LEDS]
              ' THIS WILL NEED TO BE INCREASED IF YOU ARE CONTROLLING MORE THAN 256 LEDs!!!
   long snapshot[NUM_LEDS]
-  long stack[100]
 
-PUB start(OutputPin,NumberOfLEDs, RX, TX) : okay
+PUB start(OutputPin,NumberOfLEDs) : okay
 '' Starts RGB LED Strip driver on a cog, returns false if no cog available
 '' Note: Requires at least a 20MHz system clock
-'' If RX and TX are not -1, then start another cog that listens for rgb values
-'' from a Raspberry Pi to pit on - note it is a *very* specific number
-'' It listens for the number of pixels as it has in RGBs, so if it gets less, then it
-'' may have unintended consequences.  Use at your own discretion.
   _pin:=OutputPin
   _LEDs:=NumberOfLEDs
   LEDs:=NumberOfLEDs
@@ -82,8 +74,6 @@ PUB start(OutputPin,NumberOfLEDs, RX, TX) : okay
   Low0:=76   '0.9us   
   reset:=5000 '50microseconds                
 
-
-  lock := LOCKNEW
   stop                                   'Stop the cog (just in case)
   okay:=cog:=cognew(@RGBdriver,@lights)+1'Start PASM RGB LED Strip driver
 
@@ -91,23 +81,11 @@ PUB stop                                ''Stops the RGB LED Strip driver and rel
   if cog
     cogstop(cog~ - 1)
 
-
 '' PARAMS: 'speed' is how fast to draw the letter.  Values may range from [0,100], where 100 is max speed.  Specifying 0 creates no wait.
 PUB Wait(speed)
   if (speed > 0) AND (speed =< 100)
       update:=true
       waitcnt((clkfreq / (speed*2)) + cnt)
-
-'' These methods take in lockNum, which will probably be 0, then do simple
-'' manipulation on them.  These are essentially just aliases.
-PUB SetLock(lockNum)
-  repeat while LOCKSET(lockNum)   ' Wait until the lock is free and take when it is
-    next                          ' Immediately go to the next check - constantly checking
-
-'' Alias for LOCKCLR(lockNum)
-PUB FreeLock(lockNum)
-  LOCKCLR(lockNum)                ' Clear the lock
-    
 
 '' PARAMS: 'x' is the x value for the index
 '' PARAMS: 'y' is the y value for the index
@@ -179,15 +157,12 @@ PUB LED_LETTER(letter, baseAddress, color, speed) | letterNumber, length, i, off
 
 ''' PARAMS: 'letterSize' is the number of cells to allocate for each letter. This should include spacing that follows. Recommended value is 64.
 PUB LED_STRING(ledString, baseAddress, letterSize, color, speed) | size, i, letterHold
-  SetLock(lock)
-  
   size := STRSIZE(ledString)
   letterHold := 0
 
   repeat i from 0 to (size - 1)
     BYTEMOVE(@letterHold, ledString + i, 1)
     LED_LETTER(letterHold, baseAddress + (i * letterSize), color, speed)
-  FreeLock(lock)
   
 
 PUB LEDRGB(LEDaddress,_red,_green,_blue) ''Changes RGB values of an LED at a specific address 
@@ -233,7 +208,6 @@ PUB Random(address) | rand,_red,_green,_blue,timer ''Sets LED at specified addre
 '' AUTHOR: Alex Ramey and Evan Typanski
 '' NOTE: If speed = 0, then waits 2 seconds
 PUB Flash(numFlashes, speed) | i, localSpeed                    
-  SetLock(lock)
   LONGMOVE(@snapshot, @lights, NUM_LEDS)
   waitcnt(cnt+clkfreq/10)
   if (speed == 0)
@@ -251,12 +225,9 @@ PUB Flash(numFlashes, speed) | i, localSpeed
     waitcnt(clkfreq/localSpeed + cnt)
     if (speed == 0)
       waitcnt(clkfreq/localSpeed + cnt)
-
-  FreeLock(lock)
   
 
 PUB FlipFromMiddle(speed) | color, i
-  SetLock(lock)
   color := 64                                
   repeat 3
     repeat i from 0 to maxAddress/2  
@@ -269,11 +240,8 @@ PUB FlipFromMiddle(speed) | color, i
       Wait(speed)
     color := color<<8
 
-  FreeLock(lock)
-
 '' AUTHOR: Evan Typanski
 PUB Snake(color, speed, snakeLength) | i
-  SetLock(lock)
   repeat i from 0 to maxAddress
     LED(i,color)
     if (i > snakeLength - 1)
@@ -282,8 +250,6 @@ PUB Snake(color, speed, snakeLength) | i
   repeat i from maxAddress-snakeLength to maxAddress-1
     LED(i, off)
     Wait(speed)
-
-  FreeLock(lock)
   {  
   repeat i from maxAddress to 0
     LED(i,color)
@@ -303,7 +269,6 @@ PUB Snake(color, speed, snakeLength) | i
 '' PARAMS: 'color4' is the color of the checkerboard that will start at index 1 after 2nd run through
 '' AUTHOR: Evan Typanski
 PUB Checker(color1, color2, color3, color4, speed) | i                                    
-  SetLock(lock)
   repeat i from 0 to maxAddress/2
     if (i // 2 == 0)
       LED(i, color1)
@@ -324,12 +289,9 @@ PUB Checker(color1, color2, color3, color4, speed) | i
 
     Wait(speed)
 
-  FreeLock(lock)
-
 '' Goes along the edges until it reaches the center with each box having different color parameter
 '' AUTHOR: Evan Typanski
 PUB Box(color1, color2, color3, color4, speed) | c, i, x, y
-  SetLock(lock)
   repeat i from 0 to 3
     if (i == 0)
       c := color1
@@ -355,13 +317,11 @@ PUB Box(color1, color2, color3, color4, speed) | c, i, x, y
     if (i == 3)
       LED(XY_TO_INDEX(3, 3), c)
 
-  FreeLock(lock)
-
 '' Creates a stick figure that walks across the LEDs
 '' The man starts at column 5 or so - weird, but unnoticeable
 '' AUTHOR: Evan Typanski
 PUB StickFigure(color, speed) | x, y
-  SetLock(lock)
+  
   repeat x from 2 to 93
     AllOff
     '' Draw head and body - same throughout
@@ -399,27 +359,20 @@ PUB StickFigure(color, speed) | x, y
       LED(XY_TO_INDEX(x, 0), color)
 
     Wait(speed)
-
-  FreeLock(lock)
                  
 '' Triangles interlocking
 '' AUTHOR: Evan Typanski
 PUB Triangle(color1, color2, speed) | i, j, x, y
-  SetLock(lock)
-  repeat j from 0 to 6          ' Number of times through the pattern
-    repeat i from 0 to 6        ' Number of triangles
-      repeat x from 0 to 14     ' Every triangle takes up 14 x values
-        ' Set y value to triangle correctly for top triangle
-        if (x + i*14 + j > 95)
-          quit
+  repeat j from 0 to 6
+    repeat i from 0 to 6
+      repeat x from 0 to 14
         if ( x < 7)
           y := 7 - x
         else
           y := x - 7
 
-        LED(XY_TO_INDEX(x + i*14 + j, y), color1) ' j is offset from other triangles
+        LED(XY_TO_INDEX(x + i*14 + j, y), color1)
 
-        ' Set y value to triangle correctly for bottom triangle
         if (x < 7)
           y := x
         else
@@ -429,12 +382,10 @@ PUB Triangle(color1, color2, speed) | i, j, x, y
       
         Wait(speed)
 
-  FreeLock(lock)
-
 '' Increasing speed stacking pattern
 '' No speed for this one: cannot change
-PUB StackOn(color1, color2, color3) | i, j, x
-  SetLock(lock)
+PUB Stack(color1, color2, color3) | i, j, x
+                              
   x:=8
   repeat j from 500 to 1000 step 50                              
     repeat i from 0 to maxAddress-x
@@ -456,12 +407,9 @@ PUB StackOn(color1, color2, color3) | i, j, x
     SetSection(i,i+3,off)
     waitcnt(clkfreq/10+cnt)
 
-  FreeLock(lock)
-
           
 
 PUB FillBackAndForth(color1, color2, color3, color4, speed) | i
-  SetLock(lock)
   repeat i from maxAddress to 0
     LED(i,color1)    
     Wait(speed)
@@ -475,10 +423,7 @@ PUB FillBackAndForth(color1, color2, color3, color4, speed) | i
     LED(i,color4)    
     Wait(speed)
 
-  FreeLock(lock)
-
 PUB FlipFlop(color1, color2, color3, speed) | i, j, color
-  SetLock(lock)
   repeat j from 0 to 3
     if (j == 0)
       color := color1
@@ -495,14 +440,11 @@ PUB FlipFlop(color1, color2, color3, speed) | i, j, color
       LED(maxAddress-i,off)   
       Wait(speed)
 
-  FreeLock(lock)
-
 '' Warning: VERY bright, use at own risk
 '' Nice, infinite, peacefully-pulsing, random pattern
 '' Last portion developed by:
 '' AUTHOR: Taylor Hammelman and Ankit Javia
 PUB Pulse | x, i, j
-  SetLock(lock)
   repeat 10                               
     x:=?cnt>>24                                                            
     repeat j from 0 to 255 step 5       
@@ -511,13 +453,10 @@ PUB Pulse | x, i, j
         LEDRGB(i+1,x,255-x,Intensity(255-j,16))
       waitcnt(clkfreq/30+cnt)
 
-  FreeLock(lock)
-
 '' Fills LEDs then flashes them
 '' May be very bright
 '' Can only use white
 PUB FadeInOut(speed) | i
-  SetLock(lock)
   repeat i from 0 to maxAddress/2-1     
     LED(maxAddress/2-1-i, Intensity(white, 8))
     LED(maxAddress/2-1+i, Intensity(white, 8))   
@@ -531,13 +470,10 @@ PUB FadeInOut(speed) | i
       SetAllColors(i<<16+i<<8+i)
       Wait(speed/2)
 
-  FreeLock(lock)
-
 '' This is very bright.  Therefore, it is unused.
 '' Picks random color and makes lights that color and fills it
 '' Some other stuff too
 PUB RandomPingPong | i, j, x
-  SetLock(lock)
   repeat j from 50 to 4000 step 50      'Random-color, ping-pong pattern
     Intensity(Random(0),16)
     repeat i from 0 to maxAddress 
@@ -549,7 +485,6 @@ PUB RandomPingPong | i, j, x
       x:=GetColor(i)                'The danger must be growing cause the rowers keep on rowing       
       LED(i-1,Intensity(x,16))                    'And they're certainly not showing any sign that they are slowing!
       waitcnt(clkfreq/j+cnt)            '   (If you are the lest bit epileptic, stop this demo now!) 
-  FreeLock(lock)
 DAT
 ''This PASM code sends control data to the RGB LEDs on the strip once the "update" variable is set to
 '' a value other than 0
@@ -635,4 +570,4 @@ persons to whom the Software is furnished to do so, subject to the following con
 this permission notice shall be included in all copies or substantial portions of the Software. The software is provided              
 as is, without warranty of any kind, express or implied, including but not limited to the warrenties of noninfringement.              
 In no event shall the author or copyright holder be liable for any claim, damages or other liablility, out of or in                   
-connection with the software or the use or other dealings in the software.}                                            
+connection with the software or the use or other dealings in the software.}       
