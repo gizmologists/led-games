@@ -46,7 +46,7 @@ CON        'Predefined colors that can be accessed from your code using rgb#cons
   violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
   crimson        = 153<<8                       '%00000000_10011001_00000000
 
- NUM_LEDS        = 768 ''refactor me
+  NUM_LEDS        = 768 ''refactor me
  
 VAR
   long update           'Controls when LED values are sent (its address gets loaded into Cog 1)      
