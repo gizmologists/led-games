@@ -46,7 +46,11 @@ CON        'Predefined colors that can be accessed from your code using rgb#cons
   violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
   crimson        = 153<<8                       '%00000000_10011001_00000000
 
+<<<<<<< Updated upstream
   NUM_LEDS        = 768 ''refactor me
+=======
+  NUM_LEDS       = 1024 ''refactor me
+>>>>>>> Stashed changes
  
 VAR
   long update           'Controls when LED values are sent (its address gets loaded into Cog 1)      
@@ -60,7 +64,7 @@ VAR
 PUB start(OutputPin,NumberOfLEDs) : okay
 '' Starts RGB LED Strip driver on a cog, returns false if no cog available
 '' Note: Requires at least a 20MHz system clock
-  :=OutputPin
+  _pin:=OutputPin
   _LEDs:=NumberOfLEDs
   LEDs:=NumberOfLEDs
   maxAddress:=NumberOfLEDs-1 
@@ -89,11 +93,28 @@ PUB Wait(speed)
 '' PARAMS: 'x' is the x value for the index
 '' PARAMS: 'y' is the y value for the index
 '' Bottom left is the origin
-PUB XY_TO_INDEX(x, y)
-  if (x // 2 == 0)
-    return (x * 8) + (7 - y)
+'' LED panels start 0 in bottom left for each, arranged in the following way:
+'' PANEL 4   PANEL 3
+'' PANEL 1   PANEL 2
+PUB XY_TO_INDEX(x, y) | new_x, new_y, position_in_grid
+  new_x := x // 16
+  new_y := y // 16
+  ' Position in its individual matrix is position_in_grid
+  if (new_x // 2 == 0)
+    position_in_grid := (new_x * 16) + new_y
   else
-    return (x * 8) + y
+    position_in_grid := (new_x * 16) + (15 - new_y)
+
+  ' Now figure out which grid
+  if x < 16 and y < 16
+    return position_in_grid
+  elseif x => 16 and y < 16
+    return position_in_grid + 256
+  elseif x => 16 and y => 16
+    return position_in_grid + 256 * 2
+  elseif x < 16 and y => 16
+    return position_in_grid + 256 * 3
+
 
 PUB LED(LEDaddress,color)               ''Changes the color of an LED at a specific address 
   lights[LEDaddress]:=color
@@ -489,7 +510,7 @@ DAT
 '' a value other than 0
               org       0                 
 RGBdriver     mov       pinmask,#1          'Set direction of data pin to be an output 
-              shl       pinmask,
+              shl       pinmask,_pin
               mov       dira,pinmask
               mov       index,par           'Set index to LED variable array's base address
 
@@ -542,7 +563,7 @@ Increment     add       index,#4            'Increment index by 4 byte addresses
                       
                                             'Starred values (*) are set before cog is loaded
 _update       long      0                   'Hub RAM address of "update" will be stored here*
-          long      0                   'Output pin number will be stored here*
+_pin          long      0                   'Output pin number will be stored here*
 _LEDs         long      0                   'Total number of LEDs will be stored here*
 High1         long      0                   '~1.3 microseconds(digital 1)*
 Low1          long      0                   '~1.2 microseconds*            
