@@ -10,10 +10,9 @@ CON
                  '    strip, 120 for two 2m strips wired in series, etc.) Code has been tested up to 4m
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"           'Include WS2812B_RGB_LED_Driver object and call it "rgb" for short
-  t   : "test"
 
 PUB Demo | i, j, x, maxAddress
-  rgb.start(0,TotalLEDs, -1, -1)  'Start up RGB LED driver on a new cog, set data pin to be P0, 
+  rgb.start(0,TotalLEDs)  'Start up RGB LED driver on a new cog, set data pin to be P0, 
   'rgb.start(0,TotalLEDs, 5, 6)    'Start up RGB LED driver on a new cog, set data pin to be P0,   
                                   ' and specify that there are 60 LEDs in the strip (2 meters)
   'maxAddress:=TotalLEDs-1         'LED addresses start with zero so 59 will be the maximum address
