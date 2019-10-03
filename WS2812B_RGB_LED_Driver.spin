@@ -2,7 +2,6 @@
 '' by Gavin T. Garner
 '' University of Virginia
 '' April 20, 2012
-'' teste
 {  This object can be used to control a Red-Green-Blue LED light strip (such as the 1m and 2m 
    ones available from Pololu.com as parts #2540 and #2541). These strips incorporate TM1804 chips by
    Titan Micro (one for each RGB LED) and 24-bit color data is shifted into them using quick pulses
@@ -27,7 +26,7 @@
    of longs alotted to the LED variable array below (eg. lights[120] for two 2m strips wired together).
                                        HAVE FUN!!!                                                  }  
 CON        'Predefined colors that can be accessed from your code using rgb#constant:
-                                               '  green      red      blue              
+                                                ' green    red      blue              
   off            = 0                            '%00000000_00000000_00000000
   red            = 255<<8                       '%00000000_11111111_00000000
   green          = 255<<16                      '%11111111_00000000_00000000 
@@ -45,58 +44,51 @@ CON        'Predefined colors that can be accessed from your code using rgb#cons
   indigo         = 170                          '%00000000_00111111_01111111
   violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
   crimson        = 153<<8                       '%00000000_10011001_00000000
-
-<<<<<<< Updated upstream
-  NUM_LEDS        = 768 ''refactor me
-=======
-  NUM_LEDS       = 1024 ''refactor me
->>>>>>> Stashed changes
+  
+  NUM_LEDS       = 1024
  
 VAR
-  long update           'Controls when LED values are sent (its address gets loaded into Cog 1)      
-  long maxAddress       'Address of the last LED in the string                                       
-  long cog              'Store cog # (so that the cog can be stopped)                                
-  long LEDs             'Stores the total number of addressable LEDs
-  long lights[NUM_LEDS]      'Reserve a long for each LED address in the string                           
-             ' THIS WILL NEED TO BE INCREASED IF YOU ARE CONTROLLING MORE THAN 256 LEDs!!!
-  long snapshot[NUM_LEDS]
+  long update           ' Controls when LED values are sent (its address gets loaded into Cog 1)      
+  long max_address      ' Address of the last LED in the string                                       
+  long cog, frame_cog   ' Store cog # (so that the cog can be stopped)                                
+  long lights[NUM_LEDS] ' Actual order of LEDs after daisy-chaining
+  long frame_stack[100] ' Stack for frames  
+  long fps              ' Game's update rate (1/fps)
 
-PUB start(OutputPin,NumberOfLEDs) : okay
-'' Starts RGB LED Strip driver on a cog, returns false if no cog available
-'' Note: Requires at least a 20MHz system clock
-  _pin:=OutputPin
-  _LEDs:=NumberOfLEDs
-  LEDs:=NumberOfLEDs
-  maxAddress:=NumberOfLEDs-1 
-  _update:=@update                                                    
+'' Starts RGB LED Strip driver on a cog, returns false if no cog available.
+'' Note: Requires at least a 20MHz system clock.
+''
+'' PARAMS: `output_pin` the output pin connected to the LEDs
+'' PARAMS: `leds` the number of LEDs
+PUB start(output_pin, leds) : okay
+  _pin := output_pin
+  _LEDs := leds
+  max_address := leds - 1 
+  _update := @update                                                    
 
-'LED Strip WS2812B chip
-  High1:=61  '0.9us  
-  Low1:=19    '0.35us   
-  High0:=35  '0.35us   
-  Low0:=76   '0.9us   
-  reset:=5000 '50microseconds                
+  'LED Strip WS2812B chip
+  High1 := 61   '0.9us  
+  Low1 := 19    '0.35us   
+  High0 := 35   '0.35us   
+  Low0 := 76    '0.9us   
+  reset := 5000 '50microseconds                
 
-  stop                                   'Stop the cog (just in case)
-  okay:=cog:=cognew(@RGBdriver,@lights)+1'Start PASM RGB LED Strip driver
+  stop                                        ' Stop the cog (just in case)
+  okay := cog := cognew(@RGBdriver,@lights)+1 ' Start PASM RGB LED Strip driver
 
-PUB stop                                ''Stops the RGB LED Strip driver and releases the cog
+'' Stops the LED driver and releases the cog
+PUB stop          
   if cog
     cogstop(cog~ - 1)
-
-'' PARAMS: 'speed' is how fast to draw the letter.  Values may range from [0,100], where 100 is max speed.  Specifying 0 creates no wait.
-PUB Wait(speed)
-  if (speed > 0) AND (speed =< 100)
-      update:=true
-      waitcnt((clkfreq / (speed*2)) + cnt)
-
-'' PARAMS: 'x' is the x value for the index
-'' PARAMS: 'y' is the y value for the index
-'' Bottom left is the origin
+    
+'' Bottom left is the origin.
 '' LED panels start 0 in bottom left for each, arranged in the following way:
 '' PANEL 4   PANEL 3
 '' PANEL 1   PANEL 2
-PUB XY_TO_INDEX(x, y) | new_x, new_y, position_in_grid
+''
+'' PARAMS: `x` the x value for the index
+'' PARAMS: `y` the y value for the index
+PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
   new_x := x // 16
   new_y := y // 16
   ' Position in its individual matrix is position_in_grid
@@ -115,396 +107,93 @@ PUB XY_TO_INDEX(x, y) | new_x, new_y, position_in_grid
   elseif x < 16 and y => 16
     return position_in_grid + 256 * 3
 
-
-PUB LED(LEDaddress,color)               ''Changes the color of an LED at a specific address 
-  lights[LEDaddress]:=color
-  update:=true
-
-'' PARAMS: 'letter' is case-insensitive ASCII character ex. "A" or "a"
-'' PARAMS: 'baseAddress' is the cell # of the top left LED in the 6x8(WxH) square of the letter. The Font assumes letters are 6 columns wide
-'' PARAMS: 'color' is the color to make the letter
-'' PARAMS: 'speed' is how fast to draw the letter. Values may range from [0,100], where 100 is max speed. Specifying 0 makes the letter appear all at once.
-'' AUTHOR: Alex Ramey and Evan Typanski
-PUB LED_LETTER(letter, baseAddress, color, speed) | letterNumber, length, i, offset
+'' Starts the game engine. This starts the cog that updates new_fps times per second.
+''
+'' PARAMS: `new_fps` the framerate to update at
+PUB start_engine(new_fps) | my_matrix
+  fps := new_fps
+  if frame_cog <> -1
+    frame_cog := cognew(update_frame, @frame_stack) + 1
+    
+  return frame_cog
   
-  '' Map the ASCII letter value to an alphabet index [0,26]
-  if (letter => 65) AND (letter =< 90)      '' UPPER case input
-    letterNumber := letter - 65
-  elseif (letter => 97) AND (letter =< 122) '' lower case input
-    letterNumber := letter - 97
-  else                                      '' invalid input
-    return 0.0
+'' Stops the framerate cog, causing the game to stop running and turns off all LEDs.
+PUB stop_engine
+  if frame_cog
+    cogstop(frame_cog~ - 1)
+    
+  ' Wait to ensure updates don't overlap
+  waitcnt(clkfreq/100 + cnt)
+  all_off
+  update_leds
+ 
+'' Sets pixel at (x, y) to the given color, where (x, y) is based from bottom left.
+'' Does NOT immediately update the LEDs with the pixel - relegated to fps process.
+''
+'' PARAMS: `color` the rgb value to change the pixel to
+PUB set_pixel(x, y, color)
+  lights[xy_to_index(x, y)] := color
 
-  '' Use the alphabet index to lookup how long the list of positions is for 'letter'
-  ''                              A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q   R   S   T   U   V   W   X   Y   Z
-  length := lookupz(letterNumber: 20, 30, 18, 20, 28, 18, 23, 24, 24, 16, 18, 13, 20, 24, 20, 26, 19, 30, 26, 24, 16, 16, 22, 16, 16, 18)
+'' Gets the color at position (x, y) from the bottom left.
+PUB get_pixel(x, y)
+  return get_color(xy_to_index(x, y))
 
-  '' Draw 'letter', taking 'speed' PARAM into account
-  repeat i from 0 to (length - 1)
-    case (letter)
-      "a", "A": offset := lookupz(i: 7, 6, 5, 11, 12, 13, 17, 16, 31, 30, 34, 35, 36, 42, 41, 40, 10, 21, 26, 37)
-      "b", "B": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 8, 23, 24, 39, 40, 41, 42, 36, 27, 20, 11, 12, 19, 28, 35, 45, 46, 47, 32, 31, 16, 15)
-      "c", "C": offset := lookupz(i: 46, 32, 31, 16, 15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 23, 24, 39, 41)
-      "d", "D": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 8, 23, 24, 38, 42, 43, 44, 45, 33, 31, 16, 15)
-      "e", "E": offset := lookupz(i: 47, 32, 31, 16, 15, 0, 1, 2, 3, 12, 19, 28, 35, 44, 43, 36, 27, 20, 11, 4, 5, 6, 7, 8, 23, 24, 39, 40)
-      "f", "F": offset := lookupz(i: 47, 32, 31, 16, 15, 0, 1, 2, 3, 4, 5, 6, 7, 12, 19, 28, 35, 44)
-      "g", "G": offset := lookupz(i: 46, 47, 32, 31, 16, 15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 23, 24, 39, 40, 41, 42, 37, 26)
-      "h", "H": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 47, 46, 45, 44, 43, 42, 41, 40, 11, 12, 19, 20, 28, 27, 36, 35)
-      "i", "I": offset := lookupz(i: 0, 15, 16, 31, 32, 47, 7, 8, 23, 24, 39, 40, 22, 25, 21, 26, 20, 27, 19, 28, 18, 29, 17, 30)
-      "j", "J": offset := lookupz(i: 0, 15, 16, 31, 32, 47, 33, 34, 35, 36, 37, 38, 24, 23, 8, 6)
-      "k", "K": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 19, 20, 26, 38, 40, 29, 33, 47)
-      "l", "L": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 8, 23, 24, 39, 40)
-      "m", "M": offset := lookupz(i: 7, 6, 5, 4, 3, 2, 1, 15, 17, 18, 29, 30, 32, 46, 45, 44, 43, 42, 41, 40)
-      "n", "N": offset := lookupz(i: 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 18, 19, 27, 26, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47)
-      "o", "O": offset := lookupz(i: 1, 2, 3, 4, 5, 6, 8, 23, 24, 39, 41, 42, 43, 44, 45, 46, 32, 31, 16, 15)
-      "p", "P": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 31, 32, 33, 46, 45, 34, 35, 28, 19)
-      "q", "Q": offset := lookupz(i: 16, 14, 2, 3, 4, 5, 9, 23, 24, 38, 42, 43, 44, 45, 33, 31, 20, 26, 40)
-      "r", "R": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 31, 32, 33, 46, 45, 34, 35, 28, 19, 20, 26, 38, 40)
-      "s", "S": offset := lookupz(i: 45, 46, 32, 31, 16, 15, 1, 2, 13, 18, 12, 19, 28, 20, 27, 36, 26, 37, 42, 41, 39, 24, 23, 8, 6, 5)
-      "t", "T": offset := lookupz(i: 23, 22, 21, 20, 19, 18, 17, 14, 1, 0, 15, 16, 31, 32, 47, 46, 33, 30, 29, 28, 27, 26, 25, 24)
-      "u", "U": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 9, 23, 24, 38, 42, 43, 44, 45, 46, 47)
-      "v", "V": offset := lookupz(i: 0, 1, 13, 12, 11, 10, 22, 23, 24, 25, 37, 36, 35, 34, 46, 47)
-      "w", "W": offset := lookupz(i: 0, 1, 2, 3, 4, 5, 6, 8, 22, 21, 20, 27, 26, 25, 39, 41, 42, 43, 44, 45, 46, 47)
-      "x", "X": offset := lookupz(i: 0, 14, 13, 19, 27, 37, 38, 40, 47, 33, 34, 28, 20, 10, 9, 7)
-      "y", "Y": offset := lookupz(i: 0, 1, 13, 12, 20, 21, 22, 23, 24, 25, 26, 27, 35, 34, 46, 47)
-      "z", "Z": offset := lookupz(i: 0, 15, 16, 31, 32, 47, 46, 34, 28, 20, 10, 6, 7, 8, 23, 24, 39, 40)
+'' Updates the LEDs 
+PUB update_leds
+  update := true
 
-    lights[baseAddress + offset]:=color
+'' Updates the color of LED at a specific address with color and updates the grid
+''
+'' PARAMS: `led_address` the daisy-chained address of the light to change color
+PUB set_led(led_address, color)
+  lights[led_address] := color
+  update_leds
 
-    Wait(speed)
+'' Turns off all of the LEDs
+PUB all_off | i                    
+  longfill(@lights, 0, max_address + 1) 
+  update_leds
 
-  update:=true
+'' Sets all LEDs to specified color
+PUB set_all_colors(color)
+  longfill(@lights,color, max_address + 1)
+  update_leds
 
-''' PARAMS: 'letterSize' is the number of cells to allocate for each letter. This should include spacing that follows. Recommended value is 64.
-PUB LED_STRING(ledString, baseAddress, letterSize, color, speed) | size, i, letterHold
-  size := STRSIZE(ledString)
-  letterHold := 0
+'' Sets the LED at led_address to a specified, separated RGB value
+PUB set_led_rgb(led_address, _red, _green, _blue)
+  lights[led_address] := _red<<16 + _green<<8 + _blue
+  update_leds
 
-  repeat i from 0 to (size - 1)
-    BYTEMOVE(@letterHold, ledString + i, 1)
-    LED_LETTER(letterHold, baseAddress + (i * letterSize), color, speed)
-  
+'' Sets the LED at led_address to the given color with the given intensity (from 0-255)
+PUB set_led_intensity(led_address, color, intense)
+  lights[led_address]:=((((color>>16)*intense)/255)<<16) +((((color>>8 & $FF)*intense)/255)<<8)+(((color & $FF)*intense)/255)
+  update_leds
 
-PUB LEDRGB(LEDaddress,_red,_green,_blue) ''Changes RGB values of an LED at a specific address 
-  lights[LEDaddress]:=_red<<16+_green<<8+_blue
-  update:=true
-
-PUB LEDint(LEDaddress,color,intense)               ''Changes the color of an LED at a specific address 
-  lights[LEDaddress]:=((((color>>16)*intense)/255)<<16) +((((color>>8 & $FF)*intense)/255)<<8)+(((color & $FF)*intense)/255)
-  update:=true
-
-PUB Intensity(color,intense) : newvalue              ''Changes the intensity (0-255) of a color 
+'' Changes the intensity of a color.
+''
+'' PARAMS: `intense` the value of the new intensity from 0 (no intensity) to 255 (max intensity)
+'' RETURNS: the new RGB value associated with the passed intensity
+PUB change_intensity(color, intense) : newvalue
   newvalue:=((((color>>16)*intense)/255)<<16) +((((color>>8 & $FF)*intense)/255)<<8)+(((color & $FF)*intense)/255)
+  update_leds
+  
+'' Sets the LEDs from start to end with a given color
+PUB set_section(address_start, address_end, color)
+  longfill(@lights[address_start], color, address_end - address_start + 1)
+  '       (@lights[address_end] - @lights[address_start])/4) 
+  update_leds
+  
+'' Gets the color at led_address and returns it
+PUB get_color(led_address) : color
+  color := lights[led_address]
 
-PUB SetAllColors(setcolor) | i          ''Changes the colors of all LEDs to the same color  
-  longfill(@lights,setcolor,maxAddress+1)
-  update:=true
-
-PUB AllOff | i                          ''Turns all of the LEDs off
-  longfill(@lights,0,maxAddress+1) 
-  update:=true
-  waitcnt(clkfreq/1000+cnt)              'Can't send the next update too soon
-
-PUB SetSection(AddressStart,AddressEnd,setcolor)  ''Changes colors in a section of LEDs to same color
-  longfill(@lights[AddressStart],setcolor,AddressEnd-AddressStart+1)'(@lights[AddressEnd]-@lights[AddressStart])/4) 
-  update:=true
-
-PUB GetColor(address) : color           ''Returns 24-bit RGB value from specified LED's address
-  color:=lights[address]
-
-PUB Random(address) | rand,_red,_green,_blue,timer ''Sets LED at specified address to a "random" color
-  rand:=?cnt                                        
-  _red:=rand>>24                                     
-  rand:=?rand                                        
-  _green:=rand>>24                                   
-  rand:=?rand                                        
-  _blue:=rand>>24                                    
-  lights[address]:=_red<<16+_green<<8+_blue        
-  update:=true
-
-
-'' PARAMS: 'numFlashes' is the number of times the text goes off and reappears
-'' PARAMS: 'speed' refers to how fast the LEDs flash, with higher numbers faster
-'' AUTHOR: Alex Ramey and Evan Typanski
-'' NOTE: If speed = 0, then waits 2 seconds
-PUB Flash(numFlashes, speed) | i, localSpeed                    
-  LONGMOVE(@snapshot, @lights, NUM_LEDS)
-  waitcnt(cnt+clkfreq/10)
-  if (speed == 0)
-    localSpeed := 1
-  else
-    localSpeed := speed
-    
-  repeat i from 1 to numFlashes
-    AllOff
-    waitcnt(clkfreq/localSpeed + cnt)
-    if (speed == 0)
-      waitcnt(clkfreq/localSpeed + cnt)
-    LONGMOVE(@lights, @snapshot, NUM_LEDS)
-    update:=true
-    waitcnt(clkfreq/localSpeed + cnt)
-    if (speed == 0)
-      waitcnt(clkfreq/localSpeed + cnt)
+'' Updates the LEDs fps times per second.
+PRI update_frame
+  repeat
+    waitcnt(clkfreq/fps + cnt)
+    update_leds
   
 
-PUB FlipFromMiddle(speed) | color, i
-  color := 64                                
-  repeat 3
-    repeat i from 0 to maxAddress/2  
-      LED(maxAddress/2+i,color)
-      LED(maxAddress/2-i,color)     
-      Wait(speed) 
-    repeat i from 0 to maxAddress/2
-      LED(i,off)
-      LED(maxAddress-i,off)   
-      Wait(speed)
-    color := color<<8
-
-'' AUTHOR: Evan Typanski
-PUB Snake(color, speed, snakeLength) | i
-  repeat i from 0 to maxAddress
-    LED(i,color)
-    if (i > snakeLength - 1)
-      LED(i - snakeLength, off)
-    Wait(speed)
-  repeat i from maxAddress-snakeLength to maxAddress-1
-    LED(i, off)
-    Wait(speed)
-  {  
-  repeat i from maxAddress to 0
-    LED(i,color)
-    if (i < maxAddress - snakeLength)
-      LED(snakeLength + i + 1, off)
-    Wait(speed)
-  repeat i from snakeLength to 0
-    LED(i, off)
-    Wait(speed)
-  }
-
-'' Creates a checkerboard pattern from both sides, but offset such that when they meet
-'' in the middle, they start reversing the other side's order
-'' PARAMS: 'color1' is the color of the checkerboard starting at index 0
-'' PARAMS: 'color2' is the color of the checkerboard starting at index 1
-'' PARAMS: 'color3' is the color of the checkerboard that will start at index 0 after 2nd run through
-'' PARAMS: 'color4' is the color of the checkerboard that will start at index 1 after 2nd run through
-'' AUTHOR: Evan Typanski
-PUB Checker(color1, color2, color3, color4, speed) | i                                    
-  repeat i from 0 to maxAddress/2
-    if (i // 2 == 0)
-      LED(i, color1)
-      LED(maxAddress - i, color1)  
-    else
-      LED(i, color2)
-      LED(maxAddress - i, color2)
-
-    Wait(speed)
-
-  repeat i from 383 to 0
-    if (i // 2 == 0)
-      LED(i, color3)
-      LED(maxAddress - i, color3)
-    else
-      LED(i, color4)
-      LED(maxAddress - i, color4)
-
-    Wait(speed)
-
-'' Goes along the edges until it reaches the center with each box having different color parameter
-'' AUTHOR: Evan Typanski
-PUB Box(color1, color2, color3, color4, speed) | c, i, x, y
-  repeat i from 0 to 3
-    if (i == 0)
-      c := color1
-    elseif (i == 1)
-      c := color2
-    elseif (i == 2)
-      c := color3
-    else
-      c := color4
-    repeat x from i to 95-i
-      LED(XY_TO_INDEX(x, 7-i), c)
-      Wait(speed)
-    repeat y from 6-i to i
-      LED(XY_TO_INDEX(95-i, y), c)
-      Wait(speed)
-    repeat x from 95-i to i
-      LED(XY_TO_INDEX(x, i), c)
-      Wait(speed)
-    repeat y from i to 6-i
-      LED(XY_TO_INDEX(i, y), c)
-      Wait(speed)
-
-    if (i == 3)
-      LED(XY_TO_INDEX(3, 3), c)
-
-'' Creates a stick figure that walks across the LEDs
-'' The man starts at column 5 or so - weird, but unnoticeable
-'' AUTHOR: Evan Typanski
-PUB StickFigure(color, speed) | x, y
-  
-  repeat x from 2 to 93
-    AllOff
-    '' Draw head and body - same throughout
-    
-    LED(XY_TO_INDEX(x-1, 7), color)
-    LED(XY_TO_INDEX(x, 7), color)
-    LED(XY_TO_INDEX(x+1, 7), color)
-    LED(XY_TO_INDEX(x+1, 6), color)
-    LED(XY_TO_INDEX(x+1, 5), color)
-    LED(XY_TO_INDEX(x, 5), color)
-    LED(XY_TO_INDEX(x-1, 5), color)
-    LED(XY_TO_INDEX(x-1, 6), color)
-
-    LED(XY_TO_INDEX(x, 4), color)
-    LED(XY_TO_INDEX(x, 3), color)
-    LED(XY_TO_INDEX(x, 2), color)
-
-    '' Open legs
-    if (x // 4 == 2)
-      LED(XY_TO_INDEX(x+1, 1), color)
-      LED(XY_TO_INDEX(x+2, 0), color)
-      LED(XY_TO_INDEX(x-1, 1), color)
-      LED(XY_TO_INDEX(x-2, 0), color)
-
-    '' Slightly closed legs
-    elseif (x // 4 == 3 OR x // 4 == 1)
-      LED(XY_TO_INDEX(x+1, 1), color)
-      LED(XY_TO_INDEX(x+1, 0), color)
-      LED(XY_TO_INDEX(x-1, 1), color)
-      LED(XY_TO_INDEX(x-1, 0), color)
-
-    '' Closed legs
-    else
-      LED(XY_TO_INDEX(x, 1), color)
-      LED(XY_TO_INDEX(x, 0), color)
-
-    Wait(speed)
-                 
-'' Triangles interlocking
-'' AUTHOR: Evan Typanski
-PUB Triangle(color1, color2, speed) | i, j, x, y
-  repeat j from 0 to 6
-    repeat i from 0 to 6
-      repeat x from 0 to 14
-        if ( x < 7)
-          y := 7 - x
-        else
-          y := x - 7
-
-        LED(XY_TO_INDEX(x + i*14 + j, y), color1)
-
-        if (x < 7)
-          y := x
-        else
-          y := 14 - x
-
-        LED(XY_TO_INDEX(x + i*14 + j, y), color2)
-      
-        Wait(speed)
-
-'' Increasing speed stacking pattern
-'' No speed for this one: cannot change
-PUB Stack(color1, color2, color3) | i, j, x
-                              
-  x:=8
-  repeat j from 500 to 1000 step 50                              
-    repeat i from 0 to maxAddress-x
-      SetSection(i,i+8, color1)    
-      waitcnt(clkfreq/j+cnt)
-      SetSection(0,maxAddress-x,off)
-    x:=x+8
-    repeat i from 0 to maxAddress-x
-      SetSection(i,i+8,color2)
-      waitcnt(clkfreq/j+cnt)
-      SetSection(0,maxAddress-x,off) 
-    x:=x+8  
-    repeat i from 0 to maxAddress-x
-      SetSection(i,i+8,color3)
-      waitcnt(clkfreq/j+cnt)
-      SetSection(0,maxAddress-x,off) 
-    x:=x+8
-  repeat i from maxAddress-x to maxAddress step 3
-    SetSection(i,i+3,off)
-    waitcnt(clkfreq/10+cnt)
-
-          
-
-PUB FillBackAndForth(color1, color2, color3, color4, speed) | i
-  repeat i from maxAddress to 0
-    LED(i,color1)    
-    Wait(speed)
-  repeat i from 0 to maxAddress-1
-    LED(i,color2)    
-    Wait(speed)
-  repeat i from maxAddress to 0
-    LED(i,color3)    
-    Wait(speed)
-  repeat i from 0 to maxAddress-1
-    LED(i,color4)    
-    Wait(speed)
-
-PUB FlipFlop(color1, color2, color3, speed) | i, j, color
-  repeat j from 0 to 3
-    if (j == 0)
-      color := color1
-    elseif (j == 1)
-      color := color2
-    elseif (j == 2)
-      color := color3
-    repeat i from 0 to maxAddress/2  
-      LED(maxAddress/2+i,color)
-      LED(maxAddress/2-i,color)     
-      Wait(speed)
-    repeat i from 0 to maxAddress/2
-      LED(i,off)
-      LED(maxAddress-i,off)   
-      Wait(speed)
-
-'' Warning: VERY bright, use at own risk
-'' Nice, infinite, peacefully-pulsing, random pattern
-'' Last portion developed by:
-'' AUTHOR: Taylor Hammelman and Ankit Javia
-PUB Pulse | x, i, j
-  repeat 10                               
-    x:=?cnt>>24                                                            
-    repeat j from 0 to 255 step 5       
-      repeat  i from 0 to maxAddress step 2                    
-        LEDRGB(i,x,255-x,Intensity(j,16))
-        LEDRGB(i+1,x,255-x,Intensity(255-j,16))
-      waitcnt(clkfreq/30+cnt)
-
-'' Fills LEDs then flashes them
-'' May be very bright
-'' Can only use white
-PUB FadeInOut(speed) | i
-  repeat i from 0 to maxAddress/2-1     
-    LED(maxAddress/2-1-i, Intensity(white, 8))
-    LED(maxAddress/2-1+i, Intensity(white, 8))   
-    Wait(speed)
-   
-  repeat 3
-    repeat i from 8 to 0 step 1         'Fade off
-      SetAllColors(i<<16+i<<8+i)
-      Wait(speed/2)
-    repeat i from 0 to 8 step 1         'Fade on
-      SetAllColors(i<<16+i<<8+i)
-      Wait(speed/2)
-
-'' This is very bright.  Therefore, it is unused.
-'' Picks random color and makes lights that color and fills it
-'' Some other stuff too
-PUB RandomPingPong | i, j, x
-  repeat j from 50 to 4000 step 50      'Random-color, ping-pong pattern
-    Intensity(Random(0),16)
-    repeat i from 0 to maxAddress 
-      x:=GetColor(i)                'You can retrieve the color value of any LED
-      LED(i+1,x)
-      waitcnt(clkfreq/j+cnt)
-    Random(maxAddress)              'There's no earthly way of knowing which direction they are going
-    repeat i from maxAddress to 1       '      ...There's no knowing where they're rowing... 
-      x:=GetColor(i)                'The danger must be growing cause the rowers keep on rowing       
-      LED(i-1,Intensity(x,16))                    'And they're certainly not showing any sign that they are slowing!
-      waitcnt(clkfreq/j+cnt)            '   (If you are the lest bit epileptic, stop this demo now!) 
 DAT
 ''This PASM code sends control data to the RGB LEDs on the strip once the "update" variable is set to
 '' a value other than 0
