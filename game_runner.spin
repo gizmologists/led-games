@@ -1,24 +1,16 @@
-'' RGB_LED_Demo
-'' by Gavin T. Garner
-'' University of Virginia
-'' April 20, 2012
-'' Updated September 2016
-{  This program demonstrates how to use my WS2812B_RGB_LED_Driver object and shows how to call its methods.}
-
 CON                          
-  TotalLEDs=256   '<---set the maximum number of LEDs you wish to control (eg. 30 for 1m strip, 60 for 2m
-                 '    strip, 120 for two 2m strips wired in series, etc.) Code has been tested up to 4m
+  num_leds = 256  
+  
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"           'Include WS2812B_RGB_LED_Driver object and call it "rgb" for short
 
 PUB Demo | i, j, x, maxAddress
-  rgb.start(0,TotalLEDs)  'Start up RGB LED driver on a new cog, set data pin to be P0, 
+  rgb.start(3, num_leds)  'Start up RGB LED driver on a new cog, set data pin to be P0, 
   'rgb.start(0,TotalLEDs, 5, 6)    'Start up RGB LED driver on a new cog, set data pin to be P0,   
                                   ' and specify that there are 60 LEDs in the strip (2 meters)
   'maxAddress:=TotalLEDs-1         'LED addresses start with zero so 59 will be the maximum address
-  i := 0
-  repeat 
-    rgb.LED (i, rgb#orange)
+  repeat i from 0 to num_leds
+    rgb.set_led(i, rgb#orange)
     i += 1
     waitcnt(clkfreq/2 + cnt)
     
