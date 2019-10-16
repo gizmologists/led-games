@@ -1,19 +1,28 @@
-CON                          
-  num_leds = 256  
+CON      
+  _xinfreq=6_250_000          'The system clock is set at 100MHz (you need at least a 20MHz system clock)
+  _clkmode=xtal1+pll16x                    
+  num_leds = 512
   
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"           'Include WS2812B_RGB_LED_Driver object and call it "rgb" for short
 
-PUB Demo | i, j, x, maxAddress
-  rgb.start(3, num_leds)  'Start up RGB LED driver on a new cog, set data pin to be P0, 
+PUB Demo | i
+  rgb.start(0, num_leds)  'Start up RGB LED driver on a new cog, set data pin to be P0, 
   'rgb.start(0,TotalLEDs, 5, 6)    'Start up RGB LED driver on a new cog, set data pin to be P0,   
                                   ' and specify that there are 60 LEDs in the strip (2 meters)
   'maxAddress:=TotalLEDs-1         'LED addresses start with zero so 59 will be the maximum address
+  rgb.all_off
+  waitcnt(clkfreq + cnt)
+  rgb.start_engine(2)
+  
   repeat i from 0 to num_leds
-    rgb.set_led(i, rgb#orange)
-    i += 1
-    waitcnt(clkfreq/2 + cnt)
+    'rgb.set_led(i, rgb.change_intensity(rgb#blue, 64))
+    'rgb.set_led(i+256, rgb.change_intensity(rgb#blue, 64))
+    rgb.set_pixel (i, i, rgb#blue)
+    'i += 1
+    waitcnt(clkfreq/3 + cnt)
     
+  
   {                                '
 repeat
   rgb.AllOff                      'You can turn off all of the LEDs at once

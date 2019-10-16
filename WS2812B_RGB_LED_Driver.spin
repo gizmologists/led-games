@@ -64,7 +64,8 @@ PUB start(output_pin, leds) : okay
   _pin := output_pin
   _LEDs := leds
   max_address := leds - 1 
-  _update := @update                                                    
+  _update := @update    
+                                                  
 
   'LED Strip WS2812B chip
   High1 := 61   '0.9us  
@@ -140,7 +141,7 @@ PUB get_pixel(x, y)
 
 '' Updates the LEDs 
 PUB update_leds
-  update := true
+  update := 1
 
 '' Updates the color of LED at a specific address with color and updates the grid
 ''
