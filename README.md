@@ -33,3 +33,6 @@ Propeller chip
   - `PRI update_frame`
     - Updates the entire screen's LEDs
 
+### Links
+ - Spin reference: https://www.parallax.com/sites/default/files/downloads/P8X32A-Web-PropellerManual-v1.2.pdf
+ - LED Datasheet: https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
