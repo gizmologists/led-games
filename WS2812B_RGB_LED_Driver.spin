@@ -52,6 +52,7 @@ VAR
   long max_address      ' Address of the last LED in the string                                       
   long cog, frame_cog   ' Store cog # (so that the cog can be stopped)                                
   long lights[NUM_LEDS] ' Actual order of LEDs after daisy-chaining
+  long previous_lights[NUM_LEDS] ' LEDs from the past state
   long frame_stack[100] ' Stack for frames  
   long fps              ' Game's update rate (1/fps)
 
@@ -67,6 +68,7 @@ PUB start(output_pin, leds) : okay
   _update := @update    
                                                   
 
+  'TODO: change values based on actual values?
   'LED Strip WS2812B chip
   High1 := 61   '0.9us  
   Low1 := 19    '0.35us   
@@ -111,8 +113,10 @@ PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
 '' Starts the game engine. This starts the cog that updates new_fps times per second.
 ''
 '' PARAMS: `new_fps` the framerate to update at
-PUB start_engine(new_fps) | my_matrix
+PUB start_engine(new_fps, update_frame_address) | my_matrix
+  _update_frame := update_frame_address
   fps := new_fps
+  longmove(@previous_lights, @lights, NUM_LEDS)
   if frame_cog <> -1
     frame_cog := cognew(update_frame, @frame_stack) + 1
     
@@ -133,10 +137,20 @@ PUB stop_engine
 ''
 '' PARAMS: `color` the rgb value to change the pixel to
 PUB set_pixel(x, y, color)
+  if x < 0 or x > 31 or y < 0 or y > 31
+    return
   lights[xy_to_index(x, y)] := color
 
 '' Gets the color at position (x, y) from the bottom left.
+PUB get_previous_pixel(x, y) 
+  if x < 0 or x > 31 or y < 0 or y > 31
+    return off
+  return get_previous_color(xy_to_index(x, y))
+  
+'' Gets the color at position (x, y) from the bottom left.
 PUB get_pixel(x, y)
+  if x < 0 or x > 31 or y < 0 or y > 31
+    return off
   return get_color(xy_to_index(x, y))
 
 '' Updates the LEDs 
@@ -185,14 +199,23 @@ PUB set_section(address_start, address_end, color)
   update_leds
   
 '' Gets the color at led_address and returns it
+PUB get_previous_color(led_address) : color
+  
+  color := previous_lights[led_address]
+
+'' Gets the color at led_address and returns it
 PUB get_color(led_address) : color
   color := lights[led_address]
 
 '' Updates the LEDs fps times per second.
 PRI update_frame
   repeat
-    waitcnt(clkfreq/fps + cnt)
+    repeat until long[_update_frame] == 0
+      next
     update_leds
+    longmove(@previous_lights, @lights, NUM_LEDS)
+    long[_update_frame] := 1
+    waitcnt(clkfreq/fps + cnt)
   
 
 DAT
@@ -253,6 +276,7 @@ Increment     add       index,#4            'Increment index by 4 byte addresses
                       
                                             'Starred values (*) are set before cog is loaded
 _update       long      0                   'Hub RAM address of "update" will be stored here*
+_update_frame long      0
 _pin          long      0                   'Output pin number will be stored here*
 _LEDs         long      0                   'Total number of LEDs will be stored here*
 High1         long      0                   '~1.3 microseconds(digital 1)*
