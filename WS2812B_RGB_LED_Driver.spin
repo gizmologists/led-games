@@ -70,11 +70,11 @@ PUB start(output_pin, leds) : okay
 
   'TODO: change values based on actual values?
   'LED Strip WS2812B chip
-  High1 := 61   '0.9us  
-  Low1 := 19    '0.35us   
-  High0 := 35   '0.35us   
-  Low0 := 76    '0.9us   
-  reset := 5000 '50microseconds                
+  High0 := clkfreq / 2_500_000  '0.4us
+  Low0 := clkfreq / 1_176_470 '0.85us
+  High1 := clkfreq / 1_250_000 '0.8us
+  Low1 := clkfreq / 2_222_222 '0.45us  
+  reset := clkfreq / 20_000 '50us             
 
   stop                                        ' Stop the cog (just in case)
   okay := cog := cognew(@RGBdriver,@lights)+1 ' Start PASM RGB LED Strip driver
