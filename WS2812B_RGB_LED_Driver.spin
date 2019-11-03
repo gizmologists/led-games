@@ -61,10 +61,10 @@ VAR
 ''
 '' PARAMS: `output_pin` the output pin connected to the LEDs
 '' PARAMS: `leds` the number of LEDs
-PUB start(output_pin, leds) : okay
+PUB start(output_pin) : okay
+  _LEDs := NUM_LEDS
   _pin := output_pin
-  _LEDs := leds
-  max_address := leds - 1 
+  max_address := NUM_LEDS - 1 
   _update := @update    
                                                   
 
