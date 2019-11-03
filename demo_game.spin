@@ -14,11 +14,17 @@ VAR
   long update_frame
   long button_green
   
+'' Start the game
+' Naming convention: Function takes in __ (double underscore) before variables that
+' are just assigned to a variable in the VAR section.
+' This is needed because no `this` exists in spin - so they have to be different names
 PUB start(leds, __button_green)
   ' Initialize variables
   update_frame := 0
+  ' Set pin variables - Add more variables if more buttons etc. are needed
   button_green := __button_green
-  ' Start PST for debugging - if clockrate problems fixed, change baud 144000 -> 115200
+  
+  ' Start RGB driver
   rgb.start(leds)
   
   ' Performs game setup
@@ -56,9 +62,10 @@ PUB setup_game
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update | x, y, x_offset, y_offset, num_neighbors
-  '1 to 30 covers whole grid, 10-20 doesn't but makes it faster
-  repeat x from 1 to 10
-    repeat y from 1 to 10
+  ' 1 to 30 covers whole grid, but makes it slow
+  ' Use subset to go faster (eg 1 to 10)
+  repeat x from 1 to 30
+    repeat y from 1 to 30
       num_neighbors := 0
       repeat x_offset from -1 to 1
         repeat y_offset from -1 to 1
