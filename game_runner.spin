@@ -15,17 +15,7 @@ OBJ
   pst : "Parallax Serial Terminal"
 
 PUB main | i
-  pst.start(115200)
-  pst.str(String("Hello"))
-  dira[up] := 0
-  dira[down] := 0
-  dira[left] := 0
-  dira[right] := 0
-  repeat
-    pst.str(String("UP: "))
-    pst.dec(ina[up])
-    waitcnt(clkfreq+cnt)
-    
+
   'rgb.start(0, num_leds) 
   'waitcnt(clkfreq + cnt)
   'rgb.all_off
@@ -35,5 +25,5 @@ PUB main | i
   'rgb.set_led(0, rgb#blue)
   'rgb.set_led(1, rgb#blue)
   'rgb.update_leds
-  'demo.start
+  demo.start
   'demo.stop

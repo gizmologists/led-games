@@ -19,14 +19,12 @@ PUB start
   update := 0
   
   ' Give a basic starting pattern that goes through a fair few iterations
-  rgb.set_pixel(0, 0, blue)
-  rgb.set_pixel(15, 0, blue)
-  rgb.set_pixel(16, 0, blue)
-  {
+  rgb.set_pixel(5, 4, blue)
+  rgb.set_pixel(6, 5, blue)
+  rgb.set_pixel(5, 6, blue)
   rgb.set_pixel(5, 5, blue)
   rgb.set_pixel(4, 5, blue)
   rgb.set_pixel(5, 4, blue)
-  }
 
   ' Start the engine and wait just in case (probably don't need a full second)
   rgb.start_engine(2, @update)
@@ -35,10 +33,9 @@ PUB start
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.
   repeat 
-    update := 1
-    {if update > 0
+    if update > 0
       update_frame
-      update := 0}
+      update := 0
       
   ' Should call stop after game done, so it's put here, but never reached
   stop
@@ -54,8 +51,8 @@ PUB stop
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB update_frame | x, y, x_offset, y_offset, num_neighbors
   '1 to 30 covers whole grid, 10-20 doesn't but makes it faster
-  repeat x from 1 to 30
-    repeat y from 1 to 30
+  repeat x from 1 to 10
+    repeat y from 1 to 10
       num_neighbors := 0
       repeat x_offset from -1 to 1
         repeat y_offset from -1 to 1
