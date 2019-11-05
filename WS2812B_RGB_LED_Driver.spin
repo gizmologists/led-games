@@ -1,6 +1,5 @@
 '' WS2812B_RGB_LED_Driver
-'' by Gavin T. Garner
-'' Updated by Quintin DeGroot and Evan Typanski 
+'' by Quintin DeGroot and Evan Typanski 
 '' University of Virginia
 '' October 21, 2019
 {  
@@ -56,7 +55,7 @@
 }
   
 CON
-  {Predefined colors}                           ' green    red      blue               
+  {Predefined colors}                           ' blue     red      green               
   off            = 0                            '%00000000_00000000_00000000
   red            = 255<<8                       '%00000000_11111111_00000000
   green          = 255<<16                      '%11111111_00000000_00000000 
@@ -88,17 +87,17 @@ PUB null
 PUB start_update_cog(pin) : cog_num
   { setting vars for loading into cog }
   pinmask := |< pin
-  _stop   := @lights + NUM_LEDS*4
+  _stop   := @lights + NUM_LEDS*4 - 4
   _update := @update
   High0   := clkfreq / 2_500_000   '0.4us, about 32 cycles at 80 Mhz
   Low0    := clkfreq / 1_176_470   '0.85us, about 64 cycles at 80 Mhz
   High1   := clkfreq / 1_250_000   '0.8us, about 64 cycles at 80 Mhz
   Low1    := clkfreq / 2_222_222   '0.45us, about 32 cycles at 80 Mhz
   { starting led updater cog }
-  stop_update_cog()
+  stop_update_cog
   cog_num := led_update_cog := cognew(@RGBDriver, @lights) ' todo: could I just write the value of @lights to save setup cycles?
 
-PUB stop_update_cog()
+PUB stop_update_cog
   if led_update_cog
     cogstop(led_update_cog~ - 1)
 
@@ -115,7 +114,7 @@ PUB read_pixel(x,y) | arr_pos
 PUB set_all(color)
   longfill(@lights, color, NUM_LEDS)
 
-PUB frame_update()
+PUB frame_update
   update := 1
 
 
@@ -142,7 +141,7 @@ PRI xy_to_index(x, y) | new_x, new_y, position_in_grid
 DAT
               org       0
 RGBdriver     nop
-PinInit       mov       DIRA, pinmask
+PinInit       or        DIRA, pinmask
 UpdateDelay   andn      OUTA, pinmask
               wrlong    zero, _update
 :Loop         rdlong    check, _update
@@ -150,11 +149,11 @@ UpdateDelay   andn      OUTA, pinmask
 DataInit      mov       index, PAR
               sub       index, #4
 LEDLoop       mov       bitmask, basebitmask
-              shl       bitmask, #23
               add       index, #4
               cmp       index, _stop        WZ
        if_z   jmp       UpdateDelay
-              rdlong    rgbval, index              
+              rdlong    rgbval, index
+              shr       rgbval, #8              
               and       rgbval, bitmask     WZ, NR
        if_z   mov       time, High0
        if_nz  mov       time, High1
@@ -164,7 +163,7 @@ LEDLoop       mov       bitmask, basebitmask
               jmp       #:DigiOne      
 :DigiZero     waitcnt   time, Low0                  
               andn      OUTA, pinmask
-              shr       bitmask             WC
+              shr       bitmask, #1         WC
               and       rgbval, bitmask     WZ, NR
        if_z   mov       next_period, High0
        if_nz  mov       next_period, High1      
@@ -173,7 +172,7 @@ LEDLoop       mov       bitmask, basebitmask
        if_c   jmp       #LEDLoop
        if_z   jmp       #:DigiZero
               jmp       #:DigiOne      
-:DigiOne      shr       bitmask             WC        
+:DigiOne      shr       bitmask, #1         WC        
               and       rgbval, bitmask     WZ, NR
        if_z   mov       next_period, High0
        if_nz  mov       next_period, High1                                      
@@ -197,6 +196,8 @@ Low0          long      0     ' Number of cycles to wait for the low segment of 
 High1         long      0     ' Number of cycles to wait for the high segment of a digital 1 (0.45us)
 Low1          long      0     ' Number of cycles to wait for the low segment of a digital 1 (0.8us)
 { All of these are set and modified internally }
+check         res             ' Long holding value read from update
+index         res             ' Long holding address currently reading from
 bitmask       res             ' Long with a shifting bit set that maps to the bit of rgbval being examined
 time          res             ' Long containing a shifting value used for waitcnt's
 next_period   res             ' Long that depends on whether the next bit is 1 or 0. Helps minimize required jmp's
@@ -206,7 +207,7 @@ fit
 
 
 
-{Copyright (c) 2012 Gavin Garner, University of Virginia                                                                              
+{Copyright (c) 2019 Gizmologists, University of Virginia                                                                              
 MIT License: Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated             
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the                   
 rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit                
