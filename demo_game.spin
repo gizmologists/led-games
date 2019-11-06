@@ -52,12 +52,13 @@ PUB stop
   rgb.stop
   
 PUB setup_game
-  ' Give a basic starting pattern that eventually loops
-  rgb.set_pixel(6, 5, blue)
-  rgb.set_pixel(5, 6, blue)
-  rgb.set_pixel(5, 5, blue)
-  rgb.set_pixel(4, 5, blue)
-  rgb.set_pixel(5, 4, blue)
+  ' Draw the border
+  repeat x from 0 to 31
+    rgb.set_pixel (x,0,blue)
+    rgb.set_pixel (x,31,blue)
+  repeat y from 1 to 30
+    rgb.set_pixel (0,y,blue)
+    rgb.set_pixel (31,y,blue)
   
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
