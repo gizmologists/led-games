@@ -54,6 +54,7 @@ PUB stop
   
 PUB setup_game
   ' Give a basic starting pattern that eventually loops
+  cognew(check_button(button_green, @btn), @Button_Stack)
   rgb.set_pixel(6, 5, blue)
   rgb.set_pixel(5, 6, blue)
   rgb.set_pixel(5, 5, blue)
@@ -70,12 +71,12 @@ PUB perform_frame_update
             rgb.set_pixel (1,1,off)
         else
             rgb.set_pixel (1,1,blue)
-    btn := 0
+    btn := 1
         
       
 PUB check_button(pin, button_addr)
     DIRA[pin] := 0
     repeat 
-        if INA[pin] <> 0
-            long[button_addr] := 1    
+        if INA[pin] == 0
+            long[button_addr] := 0   
         

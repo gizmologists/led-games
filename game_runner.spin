@@ -9,7 +9,7 @@ CON
     
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
-  demo: "demo_game"
+  demo: "demo_game_button"
   pst : "Parallax Serial Terminal"
 
 PUB main | i
