@@ -9,13 +9,8 @@ CON
     
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
-<<<<<<< Updated upstream
   demo: "demo_game"
-  'pst : "Parallax Serial Terminal"
-=======
-  demo: "demo_game_button"
   pst : "Parallax Serial Terminal"
->>>>>>> Stashed changes
 
 PUB main | i
   ' Set pin directions

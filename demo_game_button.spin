@@ -3,6 +3,8 @@ CON
  
   off  = 0
   blue = 50
+  FPS = 2
+''  BUTTON_GREEN = 21
 
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
@@ -10,36 +12,35 @@ OBJ
   pst : "Parallax Serial Terminal"
 
 VAR
-  long update
+  long update_frame
+  long button_green
   long btn
   long Button_Stack[10]
   
-PUB start
-  ' Start PST for debugging - if clockrate problems fixed, change baud 144000 -> 115200
+PUB start(leds, __button_green)
   pst.start(115200)
-  rgb.start(0, num_leds)
-  btn := 0
-  update := 0
-  cognew(check_button(20, @btn), @Button_Stack)
+  pst.str(string("Pls work"))
+  ' Initialize variables
+  update_frame := 0
+  ' Set pin variables - Add more variables if more buttons etc. are needed
+  button_green := __button_green
   
-  ' Give a basic starting pattern that goes through a fair few iterations
-  rgb.set_pixel(5, 4, blue)
-  rgb.set_pixel(6, 5, blue)
-  rgb.set_pixel(5, 6, blue)
-  rgb.set_pixel(5, 5, blue)
-  rgb.set_pixel(4, 5, blue)
-  rgb.set_pixel(5, 4, blue)
-
+  ' Start RGB driver
+  rgb.start(leds)
+  
+  ' Performs game setup
+  setup_game
+  
   ' Start the engine and wait just in case (probably don't need a full second)
-  rgb.start_engine(2, @update)
+  rgb.start_engine(FPS, @update_frame)
   waitcnt(clkfreq+cnt)
 
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.
   repeat 
-    if update > 0
-      update_frame
-      update := 0
+    if update_frame > 0
+      perform_frame_update
+      update_frame := 0
       
   ' Should call stop after game done, so it's put here, but never reached
   stop
@@ -51,9 +52,17 @@ PUB stop
   rgb.stop_engine
   rgb.stop
   
+PUB setup_game
+  ' Give a basic starting pattern that eventually loops
+  rgb.set_pixel(6, 5, blue)
+  rgb.set_pixel(5, 6, blue)
+  rgb.set_pixel(5, 5, blue)
+  rgb.set_pixel(4, 5, blue)
+  rgb.set_pixel(5, 4, blue)
+  
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB update_frame
+PUB perform_frame_update
   '1 to 30 covers whole grid, 10-20 doesn't but makes it faster
     pst.dec(btn)
     if btn <> 0
