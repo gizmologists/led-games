@@ -1,9 +1,11 @@
 CON      
   FPS = 2
 
-  ' Variables needed to make checks/intensity better - can also use variables in rgb
-  off  = 0
-  blue = 50
+  off  = rgb#off
+  blue = rgb#blue
+  red = rgb#red
+  green = rgb#green
+  dark_green = 128
 
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
@@ -12,7 +14,10 @@ OBJ
 
 VAR
   long update_frame
-  long button_green
+  long snake_X[900]
+  long snake_Y[900]
+  long snake_start
+  long snake_len
   
 '' Start the game
 ' Naming convention: Function takes in __ (double underscore) before variables that
