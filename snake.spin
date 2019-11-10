@@ -4,7 +4,7 @@ CON
   off  = rgb#off
   blue = rgb#blue
   red = rgb#red
-  green = rgb#green
+  green = rgb#chartreuse
   dark_green = 128
 
 OBJ
@@ -56,14 +56,14 @@ PUB stop
   rgb.stop_engine
   rgb.stop
   
-PUB setup_game
+PUB setup_game | x, y
   ' Draw the border
-  repeat x from 0 to 31
+  repeat x from 0 to 13'31
     rgb.set_pixel (x,0,blue)
-    rgb.set_pixel (x,31,blue)
-  repeat y from 1 to 30
+    rgb.set_pixel (x,13,blue)'(x,31,blue)
+  repeat y from 1 to 12
     rgb.set_pixel (0,y,blue)
-    rgb.set_pixel (31,y,blue)
+    rgb.set_pixel (13,y,blue)'(31,y,blue)
   
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
