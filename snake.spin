@@ -6,6 +6,10 @@ CON
   red = rgb#red
   chartreuse = 63<<16+31<<8
   dark_green = 64<<16
+  RIGHT = 0
+  UP = 1
+  LEFT = 2
+  DOWN = 3
 
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
@@ -87,5 +91,25 @@ PUB setup_game | x, y
   
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB perform_frame_update
+PUB perform_frame_update | deltaX, deltaY
+    deltaX = 0
+    deltaY = 0
+    
+    if 
+    
+    if direction == RIGHT
+        deltaX := 1
+    if direction == LEFT
+        deltaX := -1
+    if direction == UP
+        deltaY := 1
+    if direction == DOWN
+        deltaY := -1
+    
+    snake_X[snake_start + snake_len] = snake_X[snake_start + snake_len - 1] + deltaX
+    snake_Y[snake_start + snake_len] = snake_Y[snake_start + snake_len - 1] + deltaY
+    
+    rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start],off)
+    
+    snake_start++
   
