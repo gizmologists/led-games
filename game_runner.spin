@@ -5,7 +5,7 @@ CON
   
   'PINS
   LEDS = 0
-  JOYSTICK_LEFT = 21
+  JOYSTICK_LEFT = 21 ' ** TODO ** add correct pin numbers
   JOYSTICK_UP = 22
   JOYSTICK_RIGHT = 23
   JOYSTICK_DOWN = 24

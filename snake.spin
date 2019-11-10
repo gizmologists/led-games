@@ -18,11 +18,18 @@ OBJ
 
 VAR
   long update_frame
+  
+  long joystick_left
+  long joystick_up
+  long joystick_right
+  long joystick_down
+  
   long snake_X[900]
   long snake_Y[900]
   long snake_start
   long snake_len
-  long direction ' LEFT = 0, RIGHT = 2, UP = 1, DOWN = 3 
+  
+  long dir ' LEFT = 0, RIGHT = 2, UP = 1, DOWN = 3 
   
 '' Start the game
 ' Naming convention: Function takes in __ (double underscore) before variables that
@@ -33,10 +40,13 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   update_frame := 0
   snake_start := 0
   snake_len := 3
-  direction := 2
+  dir := 2
   
   ' Set pin variables - Add more variables if more buttons etc. are needed
-  
+  joystick_left := __joystick_left
+  joystick_up := __joystick_up
+  joystick_right := __joystick_right
+  joystick_down := __joystick_down
   
   ' Start RGB driver
   rgb.start(leds)
@@ -91,26 +101,37 @@ PUB setup_game | x, y
   
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB perform_frame_update | deltaX, deltaY
-    deltaX = 0
-    deltaY = 0
+PUB perform_frame_update | delta_X, delta_Y, old_dir
+    delta_X := 0
+    delta_Y := 0
+    old_dir := dir
     
-    if 
+    ' Set new direction to first valid found
+    ' If no valid new direction, don't change
+    if (not outa[joystick_left]) and (old_dir <> RIGHT)
+        dir := LEFT
+    elseif (not outa[joystick_up]) and (old_dir <> DOWN)
+        dir := UP
+    elseif (not outa[joystick_right]) and (old_dir <> LEFT)
+        dir := RIGHT
+    elseif (not outa[joystick_down]) and (old_dir <> UP)
+        dir := DOWN
     
-    if direction == RIGHT
-        deltaX := 1
-    if direction == LEFT
-        deltaX := -1
-    if direction == UP
-        deltaY := 1
-    if direction == DOWN
-        deltaY := -1
+    if dir == RIGHT
+        delta_X := 1
+    elseif dir == LEFT
+        delta_X := -1
+    elseif dir == UP
+        delta_Y := 1
+    elseif dir == DOWN
+        delta_Y := -1
     
-    snake_X[snake_start + snake_len] = snake_X[snake_start + snake_len - 1] + deltaX
-    snake_Y[snake_start + snake_len] = snake_Y[snake_start + snake_len - 1] + deltaY
+    ' **NOTE** seems like you can't do arithmetic in the [ ]
+    snake_X[snake_start + snake_len] = snake_X[snake_start + snake_len - 1] + delta_X
+    snake_Y[snake_start + snake_len] = snake_Y[snake_start + snake_len - 1] + delta_Y
     
     rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start],off)
     
     snake_start++
   
-  ''Copyright Matt
+''Copyright Matt
