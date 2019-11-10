@@ -2,10 +2,10 @@ CON
   FPS = 2
 
   off  = rgb#off
-  blue = rgb#blue
+  blue = 64
   red = rgb#red
-  chartreuse = rgb#chartreuse
-  dark_green = 128
+  chartreuse = 63<<16+31<<8
+  dark_green = 64<<16
 
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
@@ -24,7 +24,7 @@ VAR
 ' Naming convention: Function takes in __ (double underscore) before variables that
 ' are just assigned to a variable in the VAR section.
 ' This is needed because no `this` exists in spin - so they have to be different names
-PUB start(leds, __button_green)
+PUB start(leds)
   ' Initialize variables
   update_frame := 0
   snake_start := 0
@@ -32,7 +32,7 @@ PUB start(leds, __button_green)
   direction := 2
   
   ' Set pin variables - Add more variables if more buttons etc. are needed
-  button_green := __button_green
+  
   
   ' Start RGB driver
   rgb.start(leds)
@@ -68,25 +68,24 @@ PUB setup_game | x, y
   rgb.set_pixel (7, 5, chartreuse)
   
   ' Setup position arrays
-  snake_X[0] = 5
-  snake_Y[0] = 5
+  snake_X[0] := 5
+  snake_Y[0] := 5
   
-  snake_X[1] = 6
-  snake_Y[1] = 5
+  snake_X[1] := 6
+  snake_Y[1] := 5
   
-  snake_X[2] = 7
-  snake_Y[2] = 5
+  snake_X[2] := 7
+  snake_Y[2] := 5
   
   ' Draw the border
-  repeat x from 0 to 13'31
+  repeat x from 0 to 15'31
     rgb.set_pixel (x,0,blue)
-    rgb.set_pixel (x,13,blue)'(x,31,blue)
-  repeat y from 1 to 12
+    rgb.set_pixel (x,15,blue)'(x,31,blue)
+  repeat y from 1 to 14
     rgb.set_pixel (0,y,blue)
-    rgb.set_pixel (13,y,blue)'(31,y,blue)
+    rgb.set_pixel (15,y,blue)'(31,y,blue)
   
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update
   
-  ''Copyright Matt

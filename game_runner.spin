@@ -5,15 +5,15 @@ CON
   
   'PINS
   LEDS = 0
-  BUTTON_GREEN = 21
+  'BUTTON_GREEN = 21
     
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
-  demo: "demo_game"
+  snake: "snake"
   'pst : "Parallax Serial Terminal"
 
 PUB main | i
   ' Set pin directions
   DIRA[LEDS] := 1
-  DIRA[BUTTON_GREEN] := 0
-  demo.start(LEDS, BUTTON_GREEN)
+  'DIRA[BUTTON_GREEN] := 0
+  snake.start(LEDS)
