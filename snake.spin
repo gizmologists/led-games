@@ -95,8 +95,6 @@ PUB perform_frame_update | deltaX, deltaY
     deltaX = 0
     deltaY = 0
     
-    if 
-    
     if direction == RIGHT
         deltaX := 1
     if direction == LEFT
