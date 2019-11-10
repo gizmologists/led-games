@@ -24,7 +24,7 @@ VAR
 ' Naming convention: Function takes in __ (double underscore) before variables that
 ' are just assigned to a variable in the VAR section.
 ' This is needed because no `this` exists in spin - so they have to be different names
-PUB start(leds)
+PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_down)
   ' Initialize variables
   update_frame := 0
   snake_start := 0
