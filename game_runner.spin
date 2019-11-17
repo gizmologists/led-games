@@ -13,7 +13,7 @@ CON
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
   snake: "snake"
-  'pst : "Parallax Serial Terminal"
+  pst : "Parallax Serial Terminal"
 
 PUB main | i
   ' Set pin directions

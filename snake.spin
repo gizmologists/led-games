@@ -1,11 +1,11 @@
 CON      
-  FPS = 2
+  FPS = 1
 
   off  = rgb#off
-  blue = 64
-  red = rgb#red
-  chartreuse = 63<<16+31<<8
-  dark_green = 64<<16
+  blue = 32
+  red = 32
+  chartreuse = 32<<16+16<<8
+  dark_green = 32<<16
   RIGHT = 0
   UP = 1
   LEFT = 2
@@ -14,10 +14,13 @@ CON
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
   ' PST object for debugging
-  'pst : "Parallax Serial Terminal"
+  pst : "Parallax Serial Terminal"
 
 VAR
   long update_frame
+  
+  long curr_frame
+  long end_game
   
   long joystick_left
   long joystick_up
@@ -38,9 +41,12 @@ VAR
 PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_down)
   ' Initialize variables
   update_frame := 0
+  end_game := 0
   snake_start := 0
   snake_len := 3
-  dir := 2
+  dir := DOWN
+  
+  pst.start(9600)
   
   ' Set pin variables - Add more variables if more buttons etc. are needed
   joystick_left := __joystick_left
@@ -59,12 +65,12 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   waitcnt(clkfreq+cnt)
 
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
-  ' don't do that here - this is a demo game after all. But, this loop is run once per frame.
-  repeat 
+  ' don't do that here - this is a demo game after all. But, this loop is run once per frame.  
+  repeat while end_game == 0 
     if update_frame > 0
       perform_frame_update
       update_frame := 0
-      
+  
   ' Should call stop after game done, so it's put here, but never reached
   stop
  
@@ -76,19 +82,22 @@ PUB stop
   rgb.stop
   
 PUB setup_game | x, y
+  ' Let things stabilize or somethin
+  waitcnt(3*clkfreq + cnt)
+  
   ' Draw snake starting position
-  rgb.set_pixel (5, 5, chartreuse)
-  rgb.set_pixel (6, 5, chartreuse)
-  rgb.set_pixel (7, 5, chartreuse)
+  rgb.set_pixel (3, 3, chartreuse)
+  rgb.set_pixel (3, 4, chartreuse)
+  rgb.set_pixel (3, 5, chartreuse)
   
   ' Setup position arrays
-  snake_X[0] := 5
-  snake_Y[0] := 5
+  snake_X[0] := 3
+  snake_Y[0] := 3
   
-  snake_X[1] := 6
-  snake_Y[1] := 5
+  snake_X[1] := 3
+  snake_Y[1] := 4
   
-  snake_X[2] := 7
+  snake_X[2] := 3
   snake_Y[2] := 5
   
   ' Draw the border
@@ -101,36 +110,61 @@ PUB setup_game | x, y
   
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB perform_frame_update | delta_X, delta_Y, old_dir
+PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
     delta_X := 0
     delta_Y := 0
     old_dir := dir
     
     ' Set new direction to first valid found
     ' If no valid new direction, don't change
-    if (not outa[joystick_left]) and (old_dir <> RIGHT)
-        dir := LEFT
-    elseif (not outa[joystick_up]) and (old_dir <> DOWN)
-        dir := UP
-    elseif (not outa[joystick_right]) and (old_dir <> LEFT)
-        dir := RIGHT
-    elseif (not outa[joystick_down]) and (old_dir <> UP)
-        dir := DOWN
+    'if (not ina[joystick_left]) and (old_dir <> RIGHT)
+    '    dir := LEFT
+    'elseif (not ina[joystick_up]) and (old_dir <> DOWN)
+    '    dir := UP
+    'elseif (not ina[joystick_right]) and (old_dir <> LEFT)
+    '    dir := RIGHT
+    'elseif (not ina[joystick_down]) and (old_dir <> UP)
+    '    dir := DOWN
     
     if dir == RIGHT
         delta_X := 1
     elseif dir == LEFT
         delta_X := -1
     elseif dir == UP
-        delta_Y := 1
-    elseif dir == DOWN
         delta_Y := -1
+    elseif dir == DOWN
+        delta_Y := 1
     
-    ' **NOTE** seems like you can't do arithmetic in the [ ]
-    snake_X[snake_start + snake_len] = snake_X[snake_start + snake_len - 1] + delta_X
-    snake_Y[snake_start + snake_len] = snake_Y[snake_start + snake_len - 1] + delta_Y
+    old_head := snake_start + snake_len - 1
+    new_head := snake_start + snake_len
     
-    rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start],off)
+    snake_X[new_head] := snake_X[old_head] + delta_X
+    snake_Y[new_head] := snake_Y[old_head] + delta_Y
+       
+    pst.str(string("Turning on: ")) 
+    pst.dec(snake_X[new_head]) 
+    pst.str(string(", ")) 
+    pst.dec(snake_Y[new_head]) 
+    pst.str(string(13))
+    
+    pst.str(string("Turning off: ")) 
+    pst.dec(snake_X[snake_start]) 
+    pst.str(string(", ")) 
+    pst.dec(snake_Y[snake_start]) 
+    pst.str(string(13))
+    
+    pst.str(string("Time: "))
+    pst.dec(CNT)
+    pst.str(string(13))
+    pst.str(string(13))
+    
+    if rgb.get_pixel(snake_X[new_head], snake_Y[new_head]) <> off
+        pst.str(string("   OUCH!"))
+        waitcnt(clkfreq+cnt)
+        stop
+            
+    rgb.set_pixel (snake_X[new_head], snake_Y[new_head], chartreuse)
+    rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start], red)
     
     snake_start++
   
