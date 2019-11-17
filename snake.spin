@@ -1,9 +1,9 @@
 CON      
-  FPS = 1
+  FPS = 5
 
   off  = rgb#off
   blue = 32
-  red = 32
+  red = 32<<16
   chartreuse = 32<<16+16<<8
   dark_green = 32<<16
   RIGHT = 0
@@ -43,7 +43,7 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   update_frame := 0
   end_game := 0
   snake_start := 0
-  snake_len := 3
+  snake_len := 1
   dir := DOWN
   
   pst.start(9600)
@@ -73,7 +73,8 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   
   ' Should call stop after game done, so it's put here, but never reached
   stop
- 
+
+
 '' Stops the game
 PUB stop
   rgb.all_off
@@ -83,22 +84,34 @@ PUB stop
   
 PUB setup_game | x, y
   ' Let things stabilize or somethin
-  waitcnt(3*clkfreq + cnt)
+  waitcnt(clkfreq + cnt)
   
   ' Draw snake starting position
-  rgb.set_pixel (3, 3, chartreuse)
-  rgb.set_pixel (3, 4, chartreuse)
-  rgb.set_pixel (3, 5, chartreuse)
+  rgb.set_pixel (8, 2, chartreuse)
+  'rgb.set_pixel (8, 3, chartreuse)
+  'rgb.set_pixel (8, 4, chartreuse)
+  'rgb.set_pixel (8, 5, chartreuse)
+  'rgb.set_pixel (8, 6, chartreuse)
+  'rgb.set_pixel (8, 7, chartreuse)
   
   ' Setup position arrays
-  snake_X[0] := 3
-  snake_Y[0] := 3
+  snake_X[0] := 8
+  snake_Y[0] := 2
   
-  snake_X[1] := 3
-  snake_Y[1] := 4
+  snake_X[1] := 8
+  snake_Y[1] := 3
   
-  snake_X[2] := 3
-  snake_Y[2] := 5
+  snake_X[2] := 8
+  snake_Y[2] := 4
+  
+  snake_X[3] := 8
+  snake_Y[3] := 5
+  
+  snake_X[4] := 8
+  snake_Y[4] := 6
+  
+  snake_X[5] := 8
+  snake_Y[5] := 7
   
   ' Draw the border
   repeat x from 0 to 15'31
@@ -115,25 +128,33 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
     delta_Y := 0
     old_dir := dir
     
-    ' Set new direction to first valid found
-    ' If no valid new direction, don't change
-    'if (not ina[joystick_left]) and (old_dir <> RIGHT)
-    '    dir := LEFT
-    'elseif (not ina[joystick_up]) and (old_dir <> DOWN)
-    '    dir := UP
-    'elseif (not ina[joystick_right]) and (old_dir <> LEFT)
-    '    dir := RIGHT
-    'elseif (not ina[joystick_down]) and (old_dir <> UP)
-    '    dir := DOWN
+    'Set new direction to first valid found
+    'If no valid new direction, don't change
+    if (not ina[joystick_left]) and (old_dir <> RIGHT)
+      pst.str(string("Setting dir = LEFT"))
+      pst.str(string(13))
+      dir := LEFT
+    elseif (not ina[joystick_up]) and (old_dir <> DOWN)
+      pst.str(string("Setting dir = UP"))
+      pst.str(string(13))
+      dir := UP
+    elseif (not ina[joystick_right]) and (old_dir <> LEFT)
+      pst.str(string("Setting dir = RIGHT"))
+      pst.str(string(13))
+      dir := RIGHT
+    elseif (not ina[joystick_down]) and (old_dir <> UP)
+      pst.str(string("Setting dir = DOWN"))
+      pst.str(string(13))
+      dir := DOWN
     
     if dir == RIGHT
-        delta_X := 1
+      delta_X := 1
     elseif dir == LEFT
-        delta_X := -1
+      delta_X := -1
     elseif dir == UP
-        delta_Y := -1
+      delta_Y := -1
     elseif dir == DOWN
-        delta_Y := 1
+      delta_Y := 1
     
     old_head := snake_start + snake_len - 1
     new_head := snake_start + snake_len
@@ -164,7 +185,7 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
         stop
             
     rgb.set_pixel (snake_X[new_head], snake_Y[new_head], chartreuse)
-    rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start], red)
+    rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start], off)
     
     snake_start++
   

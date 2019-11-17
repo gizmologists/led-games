@@ -5,10 +5,10 @@ CON
   
   'PINS
   LEDS = 0
-  JOYSTICK_LEFT = 21 ' ** TODO ** add correct pin numbers
-  JOYSTICK_UP = 22
-  JOYSTICK_RIGHT = 23
-  JOYSTICK_DOWN = 24
+  JOYSTICK_LEFT = 25
+  JOYSTICK_UP = 26
+  JOYSTICK_RIGHT = 24
+  JOYSTICK_DOWN = 27
     
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"

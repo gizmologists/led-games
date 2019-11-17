@@ -101,6 +101,7 @@ PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
     position_in_grid := (new_x * 16) + (15 - new_y)
 
   ' Now figure out which grid
+  'return position_in_grid
   if x < 16 and y < 16
     return position_in_grid
   elseif x => 16 and y < 16
