@@ -1,9 +1,9 @@
 CON      
-  FPS = 5
+  FPS = 10
 
   off  = rgb#off
   blue = 32
-  red = 32<<16
+  red = rgb#red
   chartreuse = 32<<16+16<<8
   dark_green = 32<<16
   RIGHT = 0
@@ -43,7 +43,7 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   update_frame := 0
   end_game := 0
   snake_start := 0
-  snake_len := 1
+  snake_len := 3
   dir := DOWN
   
   pst.start(9600)
@@ -87,22 +87,22 @@ PUB setup_game | x, y
   waitcnt(clkfreq + cnt)
   
   ' Draw snake starting position
-  rgb.set_pixel (8, 2, chartreuse)
-  'rgb.set_pixel (8, 3, chartreuse)
-  'rgb.set_pixel (8, 4, chartreuse)
+  rgb.set_pixel (12, 6, chartreuse)
+  rgb.set_pixel (12, 7, chartreuse)
+  rgb.set_pixel (12, 8, chartreuse)
   'rgb.set_pixel (8, 5, chartreuse)
   'rgb.set_pixel (8, 6, chartreuse)
   'rgb.set_pixel (8, 7, chartreuse)
   
   ' Setup position arrays
-  snake_X[0] := 8
-  snake_Y[0] := 2
+  snake_X[0] := 12
+  snake_Y[0] := 6
   
-  snake_X[1] := 8
-  snake_Y[1] := 3
+  snake_X[1] := 12
+  snake_Y[1] := 7
   
-  snake_X[2] := 8
-  snake_Y[2] := 4
+  snake_X[2] := 12
+  snake_Y[2] := 8
   
   snake_X[3] := 8
   snake_Y[3] := 5
@@ -114,13 +114,47 @@ PUB setup_game | x, y
   snake_Y[5] := 7
   
   ' Draw the border
-  repeat x from 0 to 15'31
+  repeat x from 0 to 15
     rgb.set_pixel (x,0,blue)
-    rgb.set_pixel (x,15,blue)'(x,31,blue)
+    rgb.set_pixel (x,15,blue)
   repeat y from 1 to 14
     rgb.set_pixel (0,y,blue)
-    rgb.set_pixel (15,y,blue)'(31,y,blue)
+    rgb.set_pixel (15,y,blue)
+
+  ' Draw apple start
+  move_apple
   
+PUB move_apple | X, Y
+    X := cnt
+    Y := cnt + 100
+    
+    ?X
+    X := ||(X // 14) + 1
+    
+    ?Y  
+    Y := ||(Y // 14) + 1
+    
+    pst.str(string("X = "))
+    pst.dec(X)
+    pst.str(string(", Y = "))
+    pst.dec(Y)
+    pst.str(string(13))
+    
+    repeat until rgb.get_pixel(X,Y) == off
+      ?X
+      X := ||(X // 14) + 1
+    
+      ?Y  
+      Y := ||(Y // 14) + 1
+      
+      pst.str(string("X = "))
+      pst.dec(X)
+      pst.str(string(", Y = "))
+      pst.dec(Y)
+      pst.str(string(13))
+
+    rgb.set_pixel (X,Y,red)
+
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
@@ -179,14 +213,17 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
     pst.str(string(13))
     pst.str(string(13))
     
-    if rgb.get_pixel(snake_X[new_head], snake_Y[new_head]) <> off
+    if rgb.get_pixel (snake_X[new_head], snake_Y[new_head]) == red
+        move_apple
+        snake_len++
+    elseif rgb.get_pixel(snake_X[new_head], snake_Y[new_head]) <> off
         pst.str(string("   OUCH!"))
         waitcnt(clkfreq+cnt)
         stop
-            
-    rgb.set_pixel (snake_X[new_head], snake_Y[new_head], chartreuse)
-    rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start], off)
+    else
+        rgb.set_pixel (snake_X[snake_start],snake_Y[snake_start], off)
+        snake_start++        
     
-    snake_start++
+    rgb.set_pixel (snake_X[new_head], snake_Y[new_head], chartreuse)
   
 ''Copyright Matt
