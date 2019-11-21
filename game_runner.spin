@@ -14,6 +14,7 @@ CON
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
   demo: "demo_game_button"
+  tetris: "tetris_game"
   pst : "Parallax Serial Terminal"
 
 PUB main | i
@@ -25,6 +26,7 @@ PUB main | i
   DIRA[DOWN] := 0
   DIRA[LEFT] := 0
   DIRA[RIGHT] := 0
+  tetris.start(0, BUTTON_GREEN, UP, DOWN, LEFT, RIGHT)
   
   repeat
     pst.str(String("Green Button:"))

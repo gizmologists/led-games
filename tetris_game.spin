@@ -60,7 +60,13 @@ PUB setup_game
   ' Give a basic starting pattern that eventually loops
   ' Setup board
   ' Get 3 next shapes
-  
+  rgb.set_pixel (General_L_X_3[0], General_L_Y_3[0], rgb.change_intensity (rgb#red,32))
+  rgb.set_pixel (General_L_X_3[1], General_L_Y_3[1], rgb.change_intensity (rgb#red,32))
+  rgb.set_pixel (General_L_X_3[2], General_L_Y_3[2], rgb.change_intensity (rgb#red,32))
+  rgb.set_pixel (General_L_X_3[3], General_L_Y_3[3], rgb.change_intensity (rgb#red,32))
+  rgb.set_pixel (8, 0, rgb#red)
+
+      
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update
@@ -87,3 +93,40 @@ PUB handle_placement | i
   
 PUB handle_line_clear | i
   i := 0
+
+DAT
+General_O_X_0 byte 0, 0, 1, 1
+General_O_Y_0 byte 0, 1, 0, 1
+General_O_X_1 byte 0, 0, 1, 1
+General_O_Y_1 byte 0, 1, 0, 1
+General_O_X_2 byte 0, 0, 1, 1
+General_O_Y_2 byte 0, 1, 0, 1
+General_O_X_3 byte 0, 0, 1, 1
+General_O_Y_3 byte 0, 1, 0, 1
+
+General_L_X_0 byte 0, 0, 1, 2
+General_L_Y_0 byte 0, 1, 1, 1
+General_L_X_1 byte 1, 1, 1, 2
+General_L_Y_1 byte 0, 1, 2, 0
+General_L_X_2 byte 0, 1, 2, 2
+General_L_Y_2 byte 1, 1, 1, 2
+General_L_X_3 byte 0, 1, 1, 1
+General_L_Y_3 byte 2, 0, 1, 2
+
+General_J_X_0 byte 0, 1, 2, 2
+General_J_Y_0 byte 1, 1, 0, 1
+General_J_X_1 byte 1, 1, 1, 2
+General_J_Y_1 byte 0, 1, 2, 2
+General_J_X_2 byte 0, 0, 1, 2
+General_J_Y_2 byte 1, 2, 1, 1
+General_J_X_3 byte 0, 1, 1, 1
+General_J_Y_3 byte 0, 0, 1, 2
+
+General_T_X_0 byte 0, 1, 1, 2
+General_T_Y_0 byte 1, 0, 1, 1
+General_T_X_1 byte 1, 1, 1, 2
+General_T_Y_1 byte 0, 1, 2, 1
+General_T_X_2 byte 0, 1, 1, 2
+General_T_Y_2 byte 1, 1, 2, 1
+General_T_X_3 byte 0, 1, 1, 1
+General_T_Y_3 byte 1, 0, 1, 2

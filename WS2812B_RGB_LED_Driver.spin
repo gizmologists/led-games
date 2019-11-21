@@ -45,7 +45,7 @@ CON        'Predefined colors that can be accessed from your code using rgb#cons
   violet         = 51<<16+215<<8+255            '%01111111_10111111_10111111
   crimson        = 153<<8                       '%00000000_10011001_00000000
   
-  NUM_LEDS       = 1024
+  NUM_LEDS       = 256
  
 VAR
   long update           ' Controls when LED values are sent (its address gets loaded into Cog 1)      
@@ -95,10 +95,10 @@ PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
   new_x := x // 16
   new_y := y // 16
   ' Position in its individual matrix is position_in_grid
-  if (new_x // 2 == 0)
-    position_in_grid := (new_x * 16) + new_y
+  if (new_y // 2 == 0)
+    position_in_grid := (new_y * 16) + new_x
   else
-    position_in_grid := (new_x * 16) + (15 - new_y)
+    position_in_grid := (new_y * 16) + (15 - new_x)
 
   ' Now figure out which grid
   if x < 16 and y < 16
