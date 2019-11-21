@@ -4,6 +4,22 @@ CON
   ' Variables needed to make checks/intensity better - can also use variables in rgb
   off  = 0
   blue = 50
+  
+  ' Each piece's number
+  O_PIECE = 0
+  I_PIECE = 1
+  S_PIECE = 2
+  Z_PIECE = 3
+  L_PIECE = 4
+  J_PIECE = 5
+  T_PIECE = 6
+
+  ' Orientations of all of the pieces - Dunno why you'd use these variables since they're
+  ' just numbers... but you do you
+  ORIENTATION_0 = 0
+  ORIENTATION_1 = 1
+  ORIENTATION_2 = 2
+  ORIENTATION_3 = 3
 
 OBJ
   rgb : "WS2812B_RGB_LED_Driver"
@@ -12,8 +28,17 @@ OBJ
 
 VAR
   long update_frame
-  long button_green
-  long up, down, left, right
+  ' Pins
+  byte button_green
+  byte up, down, left, right
+  ' Current orientation
+  byte curr_orientation
+  ' Current x/y values
+  byte curr_x_offset, curr_y_offset
+  ' Piece type of current piece
+  byte curr_piece_type
+  ' 3 next pieces' types
+  byte next_piece_1, next_piece_2, next_piece_3
   
 '' Start the game
 ' Naming convention: Function takes in __ (double underscore) before variables that
@@ -60,6 +85,7 @@ PUB setup_game
   ' Give a basic starting pattern that eventually loops
   ' Setup board
   ' Get 3 next shapes
+<<<<<<< Updated upstream
   rgb.set_pixel (General_L_X_3[0], General_L_Y_3[0], rgb.change_intensity (rgb#red,32))
   rgb.set_pixel (General_L_X_3[1], General_L_Y_3[1], rgb.change_intensity (rgb#red,32))
   rgb.set_pixel (General_L_X_3[2], General_L_Y_3[2], rgb.change_intensity (rgb#red,32))
@@ -67,6 +93,14 @@ PUB setup_game
   rgb.set_pixel (8, 0, rgb#red)
 
       
+=======
+  rgb.set_pixel (General_I_X_1[0], General_I_Y_1[0], rgb.change_intensity(rgb#red,32))
+  rgb.set_pixel (General_I_X_1[1], General_I_Y_1[1], rgb.change_intensity(rgb#red,32))
+  rgb.set_pixel (General_I_X_1[2], General_I_Y_1[2], rgb.change_intensity(rgb#red,32))
+  rgb.set_pixel (General_I_X_1[3], General_I_Y_1[3], rgb.change_intensity(rgb#red,32))
+
+  
+>>>>>>> Stashed changes
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update
@@ -95,6 +129,7 @@ PUB handle_line_clear | i
   i := 0
 
 DAT
+<<<<<<< Updated upstream
 General_O_X_0 byte 0, 0, 1, 1
 General_O_Y_0 byte 0, 1, 0, 1
 General_O_X_1 byte 0, 0, 1, 1
@@ -130,3 +165,40 @@ General_T_X_2 byte 0, 1, 1, 2
 General_T_Y_2 byte 1, 1, 2, 1
 General_T_X_3 byte 0, 1, 1, 1
 General_T_Y_3 byte 1, 0, 1, 2
+=======
+General_O_X_0 byte  0, 0, 1, 1
+General_O_Y_0 byte  0, 1, 0, 1
+General_O_X_1 byte  0, 0, 1, 1
+General_O_Y_1 byte  0, 1, 0, 1
+General_O_X_2 byte  0, 0, 1, 1
+General_O_Y_2 byte  0, 1, 0, 1
+General_O_X_3 byte  0, 0, 1, 1
+General_O_Y_3 byte  0, 1, 0, 1
+
+General_I_X_0 byte  0, 1, 2, 3
+General_I_Y_0 byte  2, 2, 2, 2
+General_I_X_1 byte  2, 2, 2, 2
+General_I_Y_1 byte  0, 1, 2, 3
+General_I_X_2 byte  0, 1, 2, 3
+General_I_Y_2 byte  2, 2, 2, 2
+General_I_X_3 byte  2, 2, 2, 2
+General_I_Y_3 byte  0, 1, 2, 3
+
+General_S_X_0 byte  0, 1, 1, 2
+General_S_Y_0 byte  0, 0, 1, 1
+General_S_X_1 byte  2, 2, 1, 1
+General_S_Y_1 byte  0, 1, 1, 2
+General_S_X_2 byte  0, 1, 1, 2
+General_S_Y_2 byte  0, 0, 1, 1
+General_S_X_3 byte  2, 2, 1, 1
+General_S_Y_3 byte  0, 1, 1, 2
+
+General_Z_X_0 byte  0, 1, 1, 2
+General_Z_Y_0 byte  1, 1, 0, 0
+General_Z_X_1 byte  1, 1, 2, 2
+General_Z_Y_1 byte  0, 1, 1, 2
+General_Z_X_2 byte  0, 1, 1, 2
+General_Z_Y_2 byte  1, 1, 0, 0
+General_Z_X_3 byte  1, 1, 2, 2
+General_Z_Y_3 byte  0, 1, 1, 2
+>>>>>>> Stashed changes
