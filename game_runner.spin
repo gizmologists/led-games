@@ -15,10 +15,10 @@ OBJ
   rgb : "WS2812B_RGB_LED_Driver"
   demo: "demo_game_button"
   tetris: "tetris_game"
-  pst : "Parallax Serial Terminal"
+  'pst : "Parallax Serial Terminal"
 
 PUB main | i
-  pst.start(115200)
+  'pst.start(115200)
   ' Set pin directions
   DIRA[LEDS] := 1
   DIRA[BUTTON_GREEN] := 0
@@ -27,7 +27,7 @@ PUB main | i
   DIRA[LEFT] := 0
   DIRA[RIGHT] := 0
   tetris.start(0, BUTTON_GREEN, UP, DOWN, LEFT, RIGHT)
-  
+  {
   repeat
     pst.str(String("Green Button:"))
     pst.dec(INA[BUTTON_GREEN])
@@ -46,5 +46,5 @@ PUB main | i
     pst.newline
     pst.newline
     
-    waitcnt(clkfreq+cnt)
+    waitcnt(clkfreq+cnt)}
   demo.start(LEDS, BUTTON_GREEN)
