@@ -1,11 +1,12 @@
 CON      
-  FPS = 10
+  FPS = 5
 
   off  = rgb#off
   blue = 32
   red = rgb#red
   chartreuse = 32<<16+16<<8
   dark_green = 32<<16
+  
   RIGHT = 0
   UP = 1
   LEFT = 2
@@ -32,6 +33,10 @@ VAR
   long snake_start
   long snake_len
   
+  long joy_cog
+  long joy_stack[10]
+  long joy_dir
+  
   long dir ' LEFT = 0, RIGHT = 2, UP = 1, DOWN = 3 
   
 '' Start the game
@@ -44,7 +49,7 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   end_game := 0
   snake_start := 0
   snake_len := 3
-  dir := DOWN
+  dir := LEFT
   
   pst.start(9600)
   
@@ -77,6 +82,7 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
 
 '' Stops the game
 PUB stop
+  cogstop(joy_cog)
   rgb.all_off
   waitcnt(clkfreq/2+cnt)
   rgb.stop_engine
@@ -107,23 +113,37 @@ PUB setup_game | x, y
   snake_X[3] := 8
   snake_Y[3] := 5
   
-  snake_X[4] := 8
-  snake_Y[4] := 6
+  'snake_X[4] := 8
+  'snake_Y[4] := 6
   
-  snake_X[5] := 8
-  snake_Y[5] := 7
+  'snake_X[5] := 8
+  'snake_Y[5] := 7
   
   ' Draw the border
-  repeat x from 0 to 15
+  repeat x from 0 to 31
     rgb.set_pixel (x,0,blue)
-    rgb.set_pixel (x,15,blue)
-  repeat y from 1 to 14
+    rgb.set_pixel (x,31,blue)
+  repeat y from 1 to 30
     rgb.set_pixel (0,y,blue)
-    rgb.set_pixel (15,y,blue)
+    rgb.set_pixel (31,y,blue)
 
   ' Draw apple start
   move_apple
   
+  ' Start joystick_listener
+  joy_cog := cognew(listen(@joy_dir), @joy_stack) 
+  
+PUB listen(dir_addr)
+    repeat
+        if not ina[joystick_left]
+            long[dir_addr] := LEFT
+        if not ina[joystick_up]
+            long[dir_addr] := UP
+        if not ina[joystick_right]
+            long[dir_addr] := RIGHT
+        if not ina[joystick_down]
+            long[dir_addr] := DOWN  
+
 PUB move_apple | X, Y
     X := cnt
     Y := cnt + 100
@@ -134,49 +154,39 @@ PUB move_apple | X, Y
     ?Y  
     Y := ||(Y // 14) + 1
     
-    pst.str(string("X = "))
-    pst.dec(X)
-    pst.str(string(", Y = "))
-    pst.dec(Y)
-    pst.str(string(13))
-    
     repeat until rgb.get_pixel(X,Y) == off
       ?X
       X := ||(X // 14) + 1
     
       ?Y  
       Y := ||(Y // 14) + 1
-      
-      pst.str(string("X = "))
-      pst.dec(X)
-      pst.str(string(", Y = "))
-      pst.dec(Y)
-      pst.str(string(13))
 
     rgb.set_pixel (X,Y,red)
 
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
+PUB perform_frame_update | delta_X, delta_Y, old_dir, new_dir, old_head, new_head
     delta_X := 0
     delta_Y := 0
     old_dir := dir
     
+    new_dir := joy_dir
+    
     'Set new direction to first valid found
     'If no valid new direction, don't change
-    if (not ina[joystick_left]) and (old_dir <> RIGHT)
+    if (new_dir == LEFT) and (old_dir <> RIGHT)
       pst.str(string("Setting dir = LEFT"))
       pst.str(string(13))
       dir := LEFT
-    elseif (not ina[joystick_up]) and (old_dir <> DOWN)
+    elseif (new_dir == UP) and (old_dir <> DOWN)
       pst.str(string("Setting dir = UP"))
       pst.str(string(13))
       dir := UP
-    elseif (not ina[joystick_right]) and (old_dir <> LEFT)
+    elseif (new_dir == RIGHT) and (old_dir <> LEFT)
       pst.str(string("Setting dir = RIGHT"))
       pst.str(string(13))
       dir := RIGHT
-    elseif (not ina[joystick_down]) and (old_dir <> UP)
+    elseif (new_dir == DOWN) and (old_dir <> UP)
       pst.str(string("Setting dir = DOWN"))
       pst.str(string(13))
       dir := DOWN
@@ -196,6 +206,7 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
     snake_X[new_head] := snake_X[old_head] + delta_X
     snake_Y[new_head] := snake_Y[old_head] + delta_Y
        
+    ' debug info
     pst.str(string("Turning on: ")) 
     pst.dec(snake_X[new_head]) 
     pst.str(string(", ")) 
@@ -226,4 +237,5 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, old_head, new_head
     
     rgb.set_pixel (snake_X[new_head], snake_Y[new_head], chartreuse)
   
+
 ''Copyright Matt
