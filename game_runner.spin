@@ -1,4 +1,3 @@
-
 CON     
   _xinfreq=5_000_000          'The system clock is set at 100MHz (you need at least a 20MHz system clock)
   _clkmode=xtal1+pll16x            
@@ -47,4 +46,4 @@ PUB main | i
     pst.newline
     
     waitcnt(clkfreq+cnt)}
-  demo.start(LEDS, BUTTON_GREEN)
+  'demo.start(LEDS, BUTTON_GREEN)

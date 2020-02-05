@@ -95,10 +95,10 @@ PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
   new_x := x // 16
   new_y := y // 16
   ' Position in its individual matrix is position_in_grid
-  if (new_y // 2 == 0)
-    position_in_grid := (new_y * 16) + new_x
+  if (new_x // 2 == 0)
+    position_in_grid := (new_x * 16) + (15 - new_y)    
   else
-    position_in_grid := (new_y * 16) + (15 - new_x)
+    position_in_grid := (new_x * 16) + new_y
 
   ' Now figure out which grid
   if x < 16 and y < 16
@@ -200,7 +200,6 @@ PUB set_section(address_start, address_end, color)
   
 '' Gets the color at led_address and returns it
 PUB get_previous_color(led_address) : color
-  
   color := previous_lights[led_address]
 
 '' Gets the color at led_address and returns it

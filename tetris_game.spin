@@ -5,6 +5,13 @@ CON
   off  = 0
   blue = 30
   
+  ' Direction constants
+  RIGHT = 0
+  UP = 1
+  LEFT = 2
+  DOWN = 3
+  NONE = 4
+  
   ' Each piece's number
   O_PIECE = 0
   I_PIECE = 1
@@ -54,7 +61,7 @@ VAR
   long update_frame
   ' Pins
   byte button_green
-  byte up, down, left, right
+  byte joystick_up, joystick_down, joystick_left, joystick_right
   ' Current orientation
   byte curr_orientation
   ' Current x/y values
@@ -63,8 +70,14 @@ VAR
   byte curr_piece_type
   ' 3 next pieces' types
   byte next_piece_1, next_piece_2, next_piece_3
+  ' Buffers current direction and button presses
+  byte direction, button_pressed
   ' Score and previously/currently displayed score
   long score, prev_score
+  ' Stack for input buffering
+  long input_stack[10]
+  ' Random number seed
+  long ran
   
 '' Start the game
 ' Naming convention: Function takes in __ (double underscore) before variables that
@@ -76,10 +89,10 @@ PUB start(leds, __button_green, __up, __down, __left, __right)
   update_frame := 0
   ' Set pin variables - Add more variables if more buttons etc. are needed
   button_green := __button_green
-  up := __up
-  down := __down
-  left := __left
-  right := __right
+  joystick_up := __up
+  joystick_down := __down
+  joystick_left := __left
+  joystick_right := __right
   
   ' Start RGB driver
   rgb.start(leds)
@@ -90,6 +103,8 @@ PUB start(leds, __button_green, __up, __down, __left, __right)
   ' Start the engine and wait just in case (probably don't need a full second)
   rgb.start_engine(FPS, @update_frame)
   waitcnt(clkfreq+cnt)
+  ' Initialize random number seed - probably enough happened to be unique-ish
+  ran := cnt
 
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.
@@ -109,11 +124,18 @@ PUB stop
   rgb.stop
   
 PUB setup_game | x, y, length, i
+  ' Buffer inputs
+    cognew(check_inputs(@direction, @button_pressed), @input_stack)
+
   ' Give a basic starting pattern that eventually loops
   ' Setup board
   ' Get 3 next shapes
   score := 1337
   prev_score := 12113
+  curr_piece_type := J_PIECE
+  curr_orientation := 0
+  curr_x_offset := 2
+  curr_y_offset := 2
   update_score
   
   ' Left game border
@@ -139,6 +161,7 @@ PUB setup_game | x, y, length, i
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update
+  draw_current_piece
   ' Rotate pressed event
   ' - Override joystick event if pressed (so return immediately after)
   ' Joystick event
@@ -147,6 +170,8 @@ PUB perform_frame_update
   ' No event
   ' - Move down once every so many frames
   ' - Check if piece placed
+  direction := NONE
+  button_pressed := 0
 
 ' Handles button press for rotation
 PUB rotation_event | i
@@ -162,6 +187,18 @@ PUB handle_placement | i
   
 PUB handle_line_clear | i
   i := 0
+  
+PUB spawn_next_piece
+  curr_piece_type := next_piece_1
+  next_piece_1 := next_piece_2
+  next_piece_2 := next_piece_3
+  next_piece_3 := get_random_piece
+  curr_x_offset := 18
+  curr_y_offset := 3
+ 
+PUB draw_current_piece
+  display_piece(curr_x_offset + BOARD_START_X + 1, curr_y_offset + BOARD_START_Y + 1, curr_piece_type, curr_orientation)
+  'display_piece(12, 12, J_PIECE, 0)
   
 ' Reads from global score variable
 ' Updates the score with any changed numbers
@@ -229,7 +266,133 @@ PUB display_num(x_pos, y_pos, num) | length, x_arr, y_arr, i, x, y
 
 
     rgb.set_pixel(x, y, blue)
+    
+PUB display_piece(x_pos, y_pos, piece, orientation) | i, x, y
+  repeat i from 0 to 3
+    case(piece)
+      O_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_O_X_0[i]
+            y := y_pos + GENERAL_O_Y_0[i]
+          1:
+            x := x_pos + GENERAL_O_X_1[i]
+            y := y_pos + GENERAL_O_Y_1[i]
+          2:
+            x := x_pos + GENERAL_O_X_2[i]
+            y := y_pos + GENERAL_O_Y_2[i]
+          3:
+            x := x_pos + GENERAL_O_X_3[i]
+            y := y_pos + GENERAL_O_Y_3[i]
+      I_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_I_X_0[i]
+            y := y_pos + GENERAL_I_Y_0[i]
+          1:
+            x := x_pos + GENERAL_I_X_1[i]
+            y := y_pos + GENERAL_I_Y_1[i]
+          2:
+            x := x_pos + GENERAL_I_X_2[i]
+            y := y_pos + GENERAL_I_Y_2[i]
+          3:
+            x := x_pos + GENERAL_I_X_3[i]
+            y := y_pos + GENERAL_I_Y_3[i]
+      S_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_S_X_0[i]
+            y := y_pos + GENERAL_S_Y_0[i]
+          1:
+            x := x_pos + GENERAL_S_X_1[i]
+            y := y_pos + GENERAL_S_Y_1[i]
+          2:
+            x := x_pos + GENERAL_S_X_2[i]
+            y := y_pos + GENERAL_S_Y_2[i]
+          3:
+            x := x_pos + GENERAL_S_X_3[i]
+            y := y_pos + GENERAL_S_Y_3[i]
+      Z_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_Z_X_0[i]
+            y := y_pos + GENERAL_Z_Y_0[i]
+          1:
+            x := x_pos + GENERAL_Z_X_1[i]
+            y := y_pos + GENERAL_Z_Y_1[i]
+          2:
+            x := x_pos + GENERAL_Z_X_2[i]
+            y := y_pos + GENERAL_Z_Y_2[i]
+          3:
+            x := x_pos + GENERAL_Z_X_3[i]
+            y := y_pos + GENERAL_Z_Y_3[i]
+      L_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_L_X_0[i]
+            y := y_pos + GENERAL_L_Y_0[i]
+          1:
+            x := x_pos + GENERAL_L_X_1[i]
+            y := y_pos + GENERAL_L_Y_1[i]
+          2:
+            x := x_pos + GENERAL_L_X_2[i]
+            y := y_pos + GENERAL_L_Y_2[i]
+          3:
+            x := x_pos + GENERAL_L_X_3[i]
+            y := y_pos + GENERAL_L_Y_3[i]
+      J_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_J_X_0[i]
+            y := y_pos + GENERAL_J_Y_0[i]
+          1:
+            x := x_pos + GENERAL_J_X_1[i]
+            y := y_pos + GENERAL_J_Y_1[i]
+          2:
+            x := x_pos + GENERAL_J_X_2[i]
+            y := y_pos + GENERAL_J_Y_2[i]
+          3:
+            x := x_pos + GENERAL_J_X_3[i]
+            y := y_pos + GENERAL_J_Y_3[i]
+      T_PIECE:
+        case(orientation)
+          0:
+            x := x_pos + GENERAL_T_X_0[i]
+            y := y_pos + GENERAL_T_Y_0[i]
+          1:
+            x := x_pos + GENERAL_T_X_1[i]
+            y := y_pos + GENERAL_T_Y_1[i]
+          2:
+            x := x_pos + GENERAL_T_X_2[i]
+            y := y_pos + GENERAL_T_Y_2[i]
+          3:
+            x := x_pos + GENERAL_T_X_3[i]
+            y := y_pos + GENERAL_T_Y_3[i]
+        
+    rgb.set_pixel(x, y, blue)
 
+PUB check_inputs(direction_addr, button_pressed_addr)
+    DIRA[joystick_left] := 0
+    DIRA[joystick_right] := 0
+    DIRA[joystick_up] := 0
+    DIRA[joystick_down] := 0
+    DIRA[button_green] := 0
+
+    repeat 
+      if INA[joystick_left] == 0
+        byte[direction_addr] := LEFT 
+      if INA[joystick_right] == 0
+        byte[direction_addr] := RIGHT
+      if INA[joystick_up] == 0
+        byte[direction_addr] := UP
+      if INA[joystick_down] == 0
+        byte[direction_addr] := DOWN
+      if INA[button_green] == 0
+        byte[button_pressed_addr] := 1
+ 
+PRI get_random_piece
+  ' TODO: Get so random piece isn't already on board
+  return ran? // 7           
 DAT
 ' Pieces
 General_O_X_0 byte  0, 0, 1, 1
