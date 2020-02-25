@@ -95,10 +95,10 @@ PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
   new_x := x // 16
   new_y := y // 16
   ' Position in its individual matrix is position_in_grid
-  if (new_y // 2 == 0)
-    position_in_grid := (new_y * 16) + new_x
+  if (new_x // 2 == 0)
+    position_in_grid := (new_x * 16) + (15 - new_y)
   else
-    position_in_grid := (new_y * 16) + (15 - new_x)
+    position_in_grid := (new_x * 16) + new_y
 
   ' Now figure out which grid
   'return position_in_grid
