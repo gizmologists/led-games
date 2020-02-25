@@ -65,7 +65,7 @@ VAR
   ' Current orientation
   byte curr_orientation
   ' Current x/y values
-  byte curr_x_offset, curr_y_offset
+  long curr_x_offset, curr_y_offset
   ' Piece type of current piece
   byte curr_piece_type
   ' 3 next pieces' types
@@ -78,6 +78,8 @@ VAR
   long input_stack[10]
   ' Random number seed
   long ran
+  ' Colors that need intensity changes
+  long orange, chartreuse
   
 '' Start the game
 ' Naming convention: Function takes in __ (double underscore) before variables that
@@ -85,6 +87,7 @@ VAR
 ' This is needed because no `this` exists in spin - so they have to be different names
 PUB start(leds, __button_green, __up, __down, __left, __right)
   pst.start(115200)
+  set_colors
   ' Initialize variables
   update_frame := 0
   ' Set pin variables - Add more variables if more buttons etc. are needed
@@ -125,7 +128,7 @@ PUB stop
   
 PUB setup_game | x, y, length, i
   ' Buffer inputs
-    cognew(check_inputs(@direction, @button_pressed), @input_stack)
+  cognew(check_inputs(@direction, @button_pressed), @input_stack)
 
   ' Give a basic starting pattern that eventually loops
   ' Setup board
@@ -133,9 +136,10 @@ PUB setup_game | x, y, length, i
   score := 1337
   prev_score := 12113
   curr_piece_type := J_PIECE
-  curr_orientation := 0
-  curr_x_offset := 2
-  curr_y_offset := 2
+  curr_orientation := 2
+  curr_x_offset := 5
+  curr_y_offset := 17
+  draw_current_piece(blue)
   update_score
   
   ' Left game border
@@ -147,6 +151,8 @@ PUB setup_game | x, y, length, i
   ' Top game border
   repeat x from TOP_BORDER_START_X to TOP_BORDER_END_X
     rgb.set_pixel (x, TOP_BORDER_Y, blue)
+    
+  draw_brand
   
   {rgb.set_pixel (General_L_X_3[0], General_L_Y_3[0], rgb.change_intensity (rgb#red,32))
   rgb.set_pixel (General_L_X_3[1], General_L_Y_3[1], rgb.change_intensity (rgb#red,32))
@@ -157,11 +163,85 @@ PUB setup_game | x, y, length, i
   rgb.set_pixel (0, 16, rgb#red)
   rgb.set_pixel (16, 16, rgb#red)}
 
+PUB draw_brand
+  'S
+  rgb.set_pixel(5, 0, orange)
+  rgb.set_pixel(6, 0, orange)
+  rgb.set_pixel(7, 0, orange)
+  rgb.set_pixel(8, 0, orange)
+  rgb.set_pixel(9, 0, orange)
+  rgb.set_pixel(9, 1, orange)
+  rgb.set_pixel(9, 2, orange)
+  rgb.set_pixel(9, 3, orange)
+  rgb.set_pixel(9, 4, orange)
+  rgb.set_pixel(8, 4, orange)
+  rgb.set_pixel(7, 4, orange)
+  rgb.set_pixel(6, 4, orange)
+  rgb.set_pixel(5, 4, orange)
+  rgb.set_pixel(5, 5, orange)
+  rgb.set_pixel(5, 6, orange)
+  rgb.set_pixel(5, 7, orange)
+  rgb.set_pixel(5, 8, orange)
+  rgb.set_pixel(6, 8, orange)
+  rgb.set_pixel(7, 8, orange)
+  rgb.set_pixel(8, 8, orange)
+  rgb.set_pixel(9, 8, orange)
+  'I
+  rgb.set_pixel(1, 1, blue)
+  rgb.set_pixel(2, 1, blue)
+  rgb.set_pixel(3, 1, blue)
+  rgb.set_pixel(4, 1, blue)
+  rgb.set_pixel(5, 1, blue)
+  rgb.set_pixel(6, 1, blue)
+  rgb.set_pixel(7, 1, blue)
+  rgb.set_pixel(4, 2, blue)
+  rgb.set_pixel(4, 3, blue)
+  rgb.set_pixel(4, 4, blue)
+  rgb.set_pixel(4, 5, blue)
+  rgb.set_pixel(4, 6, blue)
+  rgb.set_pixel(4, 7, blue)
+  rgb.set_pixel(4, 8, blue)
+  rgb.set_pixel(4, 9, blue)
+  rgb.set_pixel(1, 9, blue)
+  rgb.set_pixel(2, 9, blue)
+  rgb.set_pixel(3, 9, blue)
+  rgb.set_pixel(5, 9, blue)
+  rgb.set_pixel(6, 9, blue)
+  rgb.set_pixel(7, 9, blue)
+  'R
+  rgb.set_pixel(8, 9, chartreuse)
+  rgb.set_pixel(9, 9, chartreuse)
+  rgb.set_pixel(8, 10, chartreuse)
+  rgb.set_pixel(8, 11, chartreuse)
+  rgb.set_pixel(8, 12, chartreuse)
+  rgb.set_pixel(8, 13, chartreuse)
+  rgb.set_pixel(9, 13, chartreuse)
+  rgb.set_pixel(9, 14, chartreuse)
+  rgb.set_pixel(9, 15, chartreuse)
+  rgb.set_pixel(9, 16, chartreuse)
+  rgb.set_pixel(8, 16, chartreuse)
+  rgb.set_pixel(7, 16, chartreuse)
+  rgb.set_pixel(6, 16, chartreuse)
+  rgb.set_pixel(5, 16, chartreuse)
+  rgb.set_pixel(5, 15, chartreuse)
+  rgb.set_pixel(5, 14, chartreuse)
+  rgb.set_pixel(5, 13, chartreuse)
+  rgb.set_pixel(6, 13, chartreuse)
+  rgb.set_pixel(7, 13, chartreuse)
+  rgb.set_pixel(5, 12, chartreuse)
+  rgb.set_pixel(5, 11, chartreuse)
+  rgb.set_pixel(5, 10, chartreuse)
+
+
+
 
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update
-  draw_current_piece
+  draw_current_piece(rgb#off)
+  if (not should_stop)
+    curr_y_offset := curr_y_offset - 1
+  draw_current_piece(blue)
   ' Rotate pressed event
   ' - Override joystick event if pressed (so return immediately after)
   ' Joystick event
@@ -196,8 +276,8 @@ PUB spawn_next_piece
   curr_x_offset := 18
   curr_y_offset := 3
  
-PUB draw_current_piece
-  display_piece(curr_x_offset + BOARD_START_X + 1, curr_y_offset + BOARD_START_Y + 1, curr_piece_type, curr_orientation)
+PUB draw_current_piece(color)
+  display_piece(get_global_x, get_global_y, curr_piece_type, curr_orientation, color)
   'display_piece(12, 12, J_PIECE, 0)
   
 ' Reads from global score variable
@@ -267,109 +347,15 @@ PUB display_num(x_pos, y_pos, num) | length, x_arr, y_arr, i, x, y
 
     rgb.set_pixel(x, y, blue)
     
-PUB display_piece(x_pos, y_pos, piece, orientation) | i, x, y
+PUB display_piece(x_pos, y_pos, piece, orientation, color) | i, x, y
   repeat i from 0 to 3
-    case(piece)
-      O_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_O_X_0[i]
-            y := y_pos + GENERAL_O_Y_0[i]
-          1:
-            x := x_pos + GENERAL_O_X_1[i]
-            y := y_pos + GENERAL_O_Y_1[i]
-          2:
-            x := x_pos + GENERAL_O_X_2[i]
-            y := y_pos + GENERAL_O_Y_2[i]
-          3:
-            x := x_pos + GENERAL_O_X_3[i]
-            y := y_pos + GENERAL_O_Y_3[i]
-      I_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_I_X_0[i]
-            y := y_pos + GENERAL_I_Y_0[i]
-          1:
-            x := x_pos + GENERAL_I_X_1[i]
-            y := y_pos + GENERAL_I_Y_1[i]
-          2:
-            x := x_pos + GENERAL_I_X_2[i]
-            y := y_pos + GENERAL_I_Y_2[i]
-          3:
-            x := x_pos + GENERAL_I_X_3[i]
-            y := y_pos + GENERAL_I_Y_3[i]
-      S_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_S_X_0[i]
-            y := y_pos + GENERAL_S_Y_0[i]
-          1:
-            x := x_pos + GENERAL_S_X_1[i]
-            y := y_pos + GENERAL_S_Y_1[i]
-          2:
-            x := x_pos + GENERAL_S_X_2[i]
-            y := y_pos + GENERAL_S_Y_2[i]
-          3:
-            x := x_pos + GENERAL_S_X_3[i]
-            y := y_pos + GENERAL_S_Y_3[i]
-      Z_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_Z_X_0[i]
-            y := y_pos + GENERAL_Z_Y_0[i]
-          1:
-            x := x_pos + GENERAL_Z_X_1[i]
-            y := y_pos + GENERAL_Z_Y_1[i]
-          2:
-            x := x_pos + GENERAL_Z_X_2[i]
-            y := y_pos + GENERAL_Z_Y_2[i]
-          3:
-            x := x_pos + GENERAL_Z_X_3[i]
-            y := y_pos + GENERAL_Z_Y_3[i]
-      L_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_L_X_0[i]
-            y := y_pos + GENERAL_L_Y_0[i]
-          1:
-            x := x_pos + GENERAL_L_X_1[i]
-            y := y_pos + GENERAL_L_Y_1[i]
-          2:
-            x := x_pos + GENERAL_L_X_2[i]
-            y := y_pos + GENERAL_L_Y_2[i]
-          3:
-            x := x_pos + GENERAL_L_X_3[i]
-            y := y_pos + GENERAL_L_Y_3[i]
-      J_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_J_X_0[i]
-            y := y_pos + GENERAL_J_Y_0[i]
-          1:
-            x := x_pos + GENERAL_J_X_1[i]
-            y := y_pos + GENERAL_J_Y_1[i]
-          2:
-            x := x_pos + GENERAL_J_X_2[i]
-            y := y_pos + GENERAL_J_Y_2[i]
-          3:
-            x := x_pos + GENERAL_J_X_3[i]
-            y := y_pos + GENERAL_J_Y_3[i]
-      T_PIECE:
-        case(orientation)
-          0:
-            x := x_pos + GENERAL_T_X_0[i]
-            y := y_pos + GENERAL_T_Y_0[i]
-          1:
-            x := x_pos + GENERAL_T_X_1[i]
-            y := y_pos + GENERAL_T_Y_1[i]
-          2:
-            x := x_pos + GENERAL_T_X_2[i]
-            y := y_pos + GENERAL_T_Y_2[i]
-          3:
-            x := x_pos + GENERAL_T_X_3[i]
-            y := y_pos + GENERAL_T_Y_3[i]
-        
-    rgb.set_pixel(x, y, blue)
+    x := get_piece_x(x_pos, piece, orientation, i)
+    y := get_piece_y(y_pos, piece, orientation, i)
+    pst.dec(y)
+    rgb.set_pixel(x, y, color)
+    pst.newline
+  pst.newline
+  pst.newline
 
 PUB check_inputs(direction_addr, button_pressed_addr)
     DIRA[joystick_left] := 0
@@ -389,10 +375,174 @@ PUB check_inputs(direction_addr, button_pressed_addr)
         byte[direction_addr] := DOWN
       if INA[button_green] == 0
         byte[button_pressed_addr] := 1
- 
+
 PRI get_random_piece
   ' TODO: Get so random piece isn't already on board
   return ran? // 7           
+  
+PRI set_colors
+  orange := rgb.change_intensity(229 << 8 + 114 << 16 + 0, 30)
+  chartreuse := rgb.change_intensity(rgb#chartreuse, 30)
+  
+PRI should_stop | i, at_bottom
+  repeat i from 0 to 3
+    if get_piece_y(get_global_y, curr_piece_type, curr_orientation, i) == 0
+      return true
+  return false
+  
+PRI get_global_x
+  return curr_x_offset + BOARD_START_X + 1
+
+PRI get_global_y
+  return curr_y_offset + BOARD_START_Y + 1
+  
+PRI get_piece_x(x_pos, piece, orientation, i)
+  case(piece)
+      O_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_O_X_0[i]
+          1:
+            return x_pos + GENERAL_O_X_1[i]
+          2:
+            return x_pos + GENERAL_O_X_2[i]
+          3:
+            return x_pos + GENERAL_O_X_3[i]
+      I_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_I_X_0[i]
+          1:
+            return x_pos + GENERAL_I_X_1[i]
+          2:
+            return x_pos + GENERAL_I_X_2[i]
+          3:
+            return x_pos + GENERAL_I_X_3[i]
+      S_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_S_X_0[i]
+          1:
+            return x_pos + GENERAL_S_X_1[i]
+          2:
+            return x_pos + GENERAL_S_X_2[i]
+          3:
+            return x_pos + GENERAL_S_X_3[i]
+      Z_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_Z_X_0[i]
+          1:
+            return x_pos + GENERAL_Z_X_1[i]
+          2:
+            return x_pos + GENERAL_Z_X_2[i]
+          3:
+            return x_pos + GENERAL_Z_X_3[i]
+      L_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_L_X_0[i]
+          1:
+            return x_pos + GENERAL_L_X_1[i]
+          2:
+            return x_pos + GENERAL_L_X_2[i]
+          3:
+            return x_pos + GENERAL_L_X_3[i]
+      J_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_J_X_0[i]
+          1:
+            return x_pos + GENERAL_J_X_1[i]
+          2:
+            return x_pos + GENERAL_J_X_2[i]
+          3:
+            return x_pos + GENERAL_J_X_3[i]
+      T_PIECE:
+        case(orientation)
+          0:
+            return x_pos + GENERAL_T_X_0[i]
+          1:
+            return x_pos + GENERAL_T_X_1[i]
+          2:
+            return x_pos + GENERAL_T_X_2[i]
+          3:
+            return x_pos + GENERAL_T_X_3[i]
+            
+PRI get_piece_y(y_pos, piece, orientation, i)
+  case(piece)
+      O_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_O_Y_0[i]
+          1:
+            return y_pos + GENERAL_O_Y_1[i]
+          2:
+            return y_pos + GENERAL_O_Y_2[i]
+          3:
+            return y_pos + GENERAL_O_Y_3[i]
+      I_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_I_Y_0[i]
+          1:
+            return y_pos + GENERAL_I_Y_1[i]
+          2:
+            return y_pos + GENERAL_I_Y_2[i]
+          3:
+            return y_pos + GENERAL_I_Y_3[i]
+      S_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_S_Y_0[i]
+          1:
+            return y_pos + GENERAL_S_Y_1[i]
+          2:
+            return y_pos + GENERAL_S_Y_2[i]
+          3:
+            return y_pos + GENERAL_S_Y_3[i]
+      Z_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_Z_Y_0[i]
+          1:
+            return y_pos + GENERAL_Z_Y_1[i]
+          2:
+            return y_pos + GENERAL_Z_Y_2[i]
+          3:
+            return y_pos + GENERAL_Z_Y_3[i]
+      L_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_L_Y_0[i]
+          1:
+            return y_pos + GENERAL_L_Y_1[i]
+          2:
+            return y_pos + GENERAL_L_Y_2[i]
+          3:
+            return y_pos + GENERAL_L_Y_3[i]
+      J_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_J_Y_0[i]
+          1:
+            return y_pos + GENERAL_J_Y_1[i]
+          2:
+            return y_pos + GENERAL_J_Y_2[i]
+          3:
+            return y_pos + GENERAL_J_Y_3[i]
+      T_PIECE:
+        case(orientation)
+          0:
+            return y_pos + GENERAL_T_Y_0[i]
+          1:
+            return y_pos + GENERAL_T_Y_1[i]
+          2:
+            return y_pos + GENERAL_T_Y_2[i]
+          3:
+            return y_pos + GENERAL_T_Y_3[i]
+        
+
 DAT
 ' Pieces
 General_O_X_0 byte  0, 0, 1, 1
@@ -488,3 +638,6 @@ Eight_Y byte 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 6
 
 Nine_X byte 2, 2, 2, 0, 1, 2, 0, 2, 0, 2, 0, 1, 2
 Nine_Y byte 0, 1, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 6
+
+Tetris_S_X byte 9
+Tetris_S_Y byte 0
