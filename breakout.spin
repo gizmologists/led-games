@@ -11,8 +11,10 @@ CON
   RIGHT = 1
   STALL = 0
   
-  paddle_length = 5
-  paddle_height = 5
+  paddle_length = 6
+  paddle_height = 3
+  
+  
   
 
 OBJ
@@ -35,6 +37,11 @@ VAR
   
   long paddle_pos
   
+  float ball_X
+  float ball_Y
+  float v_x
+  float v_y
+  
   
 '' Start the game
 ' Naming convention: Function takes in __ (double underscore) before variables that
@@ -44,7 +51,14 @@ PUB start(leds, __joystick_left, __joystick_right)
   ' Initialize variables
   update_frame := 0
   end_game := 0
+  
   paddle_pos := 1
+  
+  ball_X := 5.0
+  ball_Y := 5.0
+  
+  v_x := 1.0
+  v_y := 1.0
   
   'pst.start(9600)
   
@@ -86,16 +100,19 @@ PUB setup_game | x, y
   waitcnt(clkfreq + cnt)
   
   ' Draw the border
-  repeat x from 0 to 31
+  repeat x from 0 to 25
     rgb.set_pixel (x,0,blue)
     rgb.set_pixel (x,31,blue)
-  repeat y from 1 to 20
+  repeat y from 1 to 31
     rgb.set_pixel (0,y,blue)
-    rgb.set_pixel (31,y,blue)
+    rgb.set_pixel (25,y,blue)
     
   ' Draw paddle
-  repeat x from 1 to paddle_length
+  repeat x from 2 to paddle_length+1
     rgb.set_pixel (x, paddle_height, chartreuse)
+  
+  ' Draw ball
+  rgb.set_pixel(5, 5, rgb#magenta)
   
   ' Start joystick_listener
   joy_cog := cognew(listen(@joy_dir), @joy_stack) 
@@ -111,14 +128,20 @@ PUB listen(dir_addr)
 
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB perform_frame_update | i, delta_X, new_dir
+PUB perform_frame_update | i, paddle_dir, new_dir, 
 
-    delta_X := joy_dir
+    rgb.set_pixel(round(ball_X), round(ball_Y), rgb#off)
     
-    if delta_X == LEFT and (paddle_pos <> 1)
+    ball_X += v_x
+    ball_Y += v_y
+    
+    rgb.set_pixel(round(ball_X), round(ball_Y), rgb#magenta)
+
+    paddle_dir := joy_dir
+    if paddle_dir == LEFT and (paddle_pos <> 1)
         rgb.set_pixel(paddle_pos+paddle_length-1, paddle_height, rgb#off)
         rgb.set_pixel(paddle_pos-1, paddle_height, chartreuse)
-    elseif delta_X == RIGHT and (paddle_pos+paddle_length-1 <> 31)
+    elseif paddle_dir == RIGHT and (paddle_pos+paddle_length-1 <> 31)
         rgb.set_pixel(paddle_pos, paddle_height, rgb#off)
         rgb.set_pixel(paddle_pos+paddle_length, paddle_height, chartreuse)
   
