@@ -1,5 +1,5 @@
 CON      
-  FPS = 2
+  FPS = 1
 
   ' Variables needed to make checks/intensity better - can also use variables in rgb
   off  = 0
@@ -135,9 +135,12 @@ PUB setup_game | x, y, length, i
   ' Get 3 next shapes
   score := 1337
   prev_score := 12113
-  curr_piece_type := J_PIECE
-  curr_orientation := 2
-  curr_x_offset := 5
+  curr_piece_type := J_PIECE'get_random_piece
+  'next_piece_1 := get_random_piece
+  'next_piece_2 := get_random_piece
+  'next_piece_3 := get_random_piece
+  curr_orientation := 0
+  curr_x_offset := 7
   curr_y_offset := 17
   draw_current_piece(blue)
   update_score
@@ -239,7 +242,9 @@ PUB draw_brand
 '' LEDs are not updated until this code is done - make sure it's fast!
 PUB perform_frame_update
   draw_current_piece(rgb#off)
-  if (not should_stop)
+  'if should_stop
+    'spawn_next_piece
+  if not should_stop
     curr_y_offset := curr_y_offset - 1
   draw_current_piece(blue)
   ' Rotate pressed event
@@ -273,10 +278,10 @@ PUB spawn_next_piece
   next_piece_1 := next_piece_2
   next_piece_2 := next_piece_3
   next_piece_3 := get_random_piece
-  curr_x_offset := 18
-  curr_y_offset := 3
+  curr_x_offset := 5
+  curr_y_offset := 17
  
-PUB draw_current_piece(color)
+PUB draw_current_piece(color)  
   display_piece(get_global_x, get_global_y, curr_piece_type, curr_orientation, color)
   'display_piece(12, 12, J_PIECE, 0)
   
@@ -288,9 +293,9 @@ PUB update_score | i, tmp_score, tmp_prev_score, curr_digit, prev_digit, x_pos
   repeat i from 0 to NUM_SCORE_DIGITS - 1
     curr_digit := tmp_score // 10
     prev_digit := tmp_prev_score // 10
-    pst.dec(curr_digit)
-    pst.dec(prev_digit)
-    pst.newline
+    'pst.dec(curr_digit)
+    'pst.dec(prev_digit)
+    'pst.newline
     if curr_digit <> prev_digit
       ' First iteration through loop is ones, second tens, etc.
       ' This just looks up the starting X position 
@@ -351,11 +356,18 @@ PUB display_piece(x_pos, y_pos, piece, orientation, color) | i, x, y
   repeat i from 0 to 3
     x := get_piece_x(x_pos, piece, orientation, i)
     y := get_piece_y(y_pos, piece, orientation, i)
-    pst.dec(y)
-    rgb.set_pixel(x, y, color)
+    pst.dec(x)
     pst.newline
-  pst.newline
-  pst.newline
+    pst.dec(y)
+    pst.newline
+    pst.dec(color)
+    pst.newline
+    pst.newline
+
+    rgb.set_pixel(x, y, color)
+    'pst.newline
+  'pst.newline
+  'pst.newline
 
 PUB check_inputs(direction_addr, button_pressed_addr)
     DIRA[joystick_left] := 0
@@ -394,7 +406,7 @@ PRI get_global_x
   return curr_x_offset + BOARD_START_X + 1
 
 PRI get_global_y
-  return curr_y_offset + BOARD_START_Y + 1
+  return curr_y_offset + BOARD_START_Y
   
 PRI get_piece_x(x_pos, piece, orientation, i)
   case(piece)
@@ -638,6 +650,3 @@ Eight_Y byte 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 6
 
 Nine_X byte 2, 2, 2, 0, 1, 2, 0, 2, 0, 2, 0, 1, 2
 Nine_Y byte 0, 1, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 6
-
-Tetris_S_X byte 9
-Tetris_S_Y byte 0
