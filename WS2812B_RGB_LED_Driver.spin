@@ -113,8 +113,7 @@ PUB xy_to_index(x, y) | new_x, new_y, position_in_grid
 '' Starts the game engine. This starts the cog that updates new_fps times per second.
 ''
 '' PARAMS: `new_fps` the framerate to update at
-PUB start_engine(new_fps, update_frame_address) | my_matrix
-  _update_frame := update_frame_address
+PUB start_engine(new_fps, update_frame_lock) | my_matrix
   fps := new_fps
   longmove(@previous_lights, @lights, NUM_LEDS)
   if frame_cog <> -1
@@ -209,12 +208,16 @@ PUB get_color(led_address) : color
 '' Updates the LEDs fps times per second.
 PRI update_frame
   repeat
-    repeat until long[_update_frame] == 0
-      next
+    repeat until not lockset(_update_frame_lock)
     update_leds
     longmove(@previous_lights, @lights, NUM_LEDS)
-    long[_update_frame] := 1
-    waitcnt(clkfreq/fps + cnt)
+    lockclr(_update_frame_lock)
+    waitcnt(cnt + clkfreq/30)
+    'long[_update_frame] := 1
+    'next_cycle := clkfreq/fps + cnt
+    ' Woo busy waiting
+    'repeat until cnt > next_cycle
+    'waitcnt(clkfreq/fps + cnt)
   
 
 DAT
@@ -275,7 +278,7 @@ Increment     add       index,#4            'Increment index by 4 byte addresses
                       
                                             'Starred values (*) are set before cog is loaded
 _update       long      0                   'Hub RAM address of "update" will be stored here*
-_update_frame long      0
+_update_frame_lock long 0
 _pin          long      0                   'Output pin number will be stored here*
 _LEDs         long      0                   'Total number of LEDs will be stored here*
 High1         long      0                   '~1.3 microseconds(digital 1)*

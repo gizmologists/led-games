@@ -1,5 +1,5 @@
 CON      
-  FPS = 1
+  FPS = 10
 
   ' Variables needed to make checks/intensity better - can also use variables in rgb
   off  = 0
@@ -58,7 +58,7 @@ OBJ
   pst : "Parallax Serial Terminal"
 
 VAR
-  long update_frame
+  long update_lock
   ' Pins
   byte button_green
   byte joystick_up, joystick_down, joystick_left, joystick_right
@@ -85,11 +85,10 @@ VAR
 ' Naming convention: Function takes in __ (double underscore) before variables that
 ' are just assigned to a variable in the VAR section.
 ' This is needed because no `this` exists in spin - so they have to be different names
-PUB start(leds, __button_green, __up, __down, __left, __right)
+PUB start(leds, __button_green, __up, __down, __left, __right) | next_cnt
   pst.start(115200)
   set_colors
   ' Initialize variables
-  update_frame := 0
   ' Set pin variables - Add more variables if more buttons etc. are needed
   button_green := __button_green
   joystick_up := __up
@@ -97,24 +96,36 @@ PUB start(leds, __button_green, __up, __down, __left, __right)
   joystick_left := __left
   joystick_right := __right
   
+  update_lock := locknew
+  
   ' Start RGB driver
+  lockset(update_lock)
   rgb.start(leds)
   
   ' Performs game setup
   setup_game
-  
+    
   ' Start the engine and wait just in case (probably don't need a full second)
-  rgb.start_engine(FPS, @update_frame)
-  waitcnt(clkfreq+cnt)
+  rgb.start_engine(FPS, update_lock)
+  'waitcnt(clkfreq+cnt)
   ' Initialize random number seed - probably enough happened to be unique-ish
   ran := cnt
-
+  next_cnt := cnt + clkfreq
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.
-  repeat 
-    if update_frame > 0
-      perform_frame_update
-      update_frame := 0
+  lockclr(update_lock)
+  waitcnt(cnt + clkfreq/30)
+  repeat
+    repeat until lockset(update_lock)
+    'if cnt < next_cnt
+    waitcnt(next_cnt)
+    'repeat until cnt > next_cnt
+    perform_frame_update
+    lockclr(update_lock)
+    next_cnt := cnt + clkfreq/FPS
+    waitcnt(cnt + clkfreq/30)
+    'update_frame := 0
+
       
   ' Should call stop after game done, so it's put here, but never reached
   stop
@@ -135,13 +146,13 @@ PUB setup_game | x, y, length, i
   ' Get 3 next shapes
   score := 1337
   prev_score := 12113
-  curr_piece_type := J_PIECE'get_random_piece
-  'next_piece_1 := get_random_piece
-  'next_piece_2 := get_random_piece
-  'next_piece_3 := get_random_piece
+  curr_piece_type := T_PIECE'get_random_piece
+  next_piece_1 := get_random_piece
+  next_piece_2 := get_random_piece
+  next_piece_3 := get_random_piece
   curr_orientation := 0
-  curr_x_offset := 7
-  curr_y_offset := 17
+  curr_x_offset := 1
+  curr_y_offset := 18
   draw_current_piece(blue)
   update_score
   
@@ -299,7 +310,7 @@ PUB perform_frame_update
   'if should_stop
     'spawn_next_piece
   if not should_stop
-    curr_y_offset := curr_y_offset - 1
+    curr_x_offset := curr_x_offset + 1
   draw_current_piece(blue)
   ' Rotate pressed event
   ' - Override joystick event if pressed (so return immediately after)
