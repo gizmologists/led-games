@@ -1,5 +1,5 @@
 CON      
-  FPS = 3
+  FPS = 15
 
   off  = rgb#off
   blue = 32
@@ -18,7 +18,7 @@ OBJ
   pst : "Parallax Serial Terminal"
 
 VAR
-  long update_frame
+  long update_lock
   
   long curr_frame
   long end_game
@@ -45,7 +45,6 @@ VAR
 ' This is needed because no `this` exists in spin - so they have to be different names
 PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_down) | next_cnt
   ' Initialize variables
-  update_frame := 0
   end_game := 0
   snake_start := 0
   snake_len := 3
@@ -59,6 +58,8 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   joystick_right := __joystick_right
   joystick_down := __joystick_down
   
+  update_lock := locknew
+  lockset(update_lock)
   ' Start RGB driver
   rgb.start(leds)
   
@@ -66,20 +67,24 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   setup_game
   
   ' Start the engine and wait just in case (probably don't need a full second)
-  rgb.start_engine(FPS, @update_frame)
+  rgb.start_engine(FPS, update_lock)
   waitcnt(clkfreq+cnt)
   
-  next_cnt := cnt
+  next_cnt := cnt + clkfreq
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.  
-  repeat while end_game == 0 
-    if update_frame > 0
-      if cnt < next_cnt
-        waitcnt(next_cnt)
-      'repeat until cnt > next_cnt
-      perform_frame_update
-      next_cnt := cnt + clkfreq/FPS
-      update_frame := 0
+  lockclr(update_lock)
+  waitcnt(cnt + clkfreq/30)
+  repeat while end_game == 0
+    repeat until lockset(update_lock)
+    'if cnt < next_cnt
+    waitcnt(next_cnt)
+    'repeat until cnt > next_cnt
+    perform_frame_update
+    lockclr(update_lock)
+    next_cnt := cnt + clkfreq/FPS
+    waitcnt(cnt + clkfreq/30)
+    'update_frame := 0
   
   ' Should call stop after game done, so it's put here, but never reached
   pst.str(string("STOPPING"))
