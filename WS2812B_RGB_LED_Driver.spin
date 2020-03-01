@@ -216,7 +216,7 @@ PRI update_frame
     update_leds
     longmove(@previous_lights, @lights, NUM_LEDS)
     long[_update_frame] := 1
-    waitcnt(clkfreq/fps + cnt)
+    'waitcnt(clkfreq/fps + cnt)
   
 
 DAT

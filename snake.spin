@@ -1,5 +1,5 @@
 CON      
-  FPS = 5
+  FPS = 3
 
   off  = rgb#off
   blue = 32
@@ -43,7 +43,7 @@ VAR
 ' Naming convention: Function takes in __ (double underscore) before variables that
 ' are just assigned to a variable in the VAR section.
 ' This is needed because no `this` exists in spin - so they have to be different names
-PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_down)
+PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_down) | next_cnt
   ' Initialize variables
   update_frame := 0
   end_game := 0
@@ -51,7 +51,7 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   snake_len := 3
   dir := LEFT
   
-  pst.start(9600)
+  pst.start(115200)
   
   ' Set pin variables - Add more variables if more buttons etc. are needed
   joystick_left := __joystick_left
@@ -68,17 +68,23 @@ PUB start(leds, __joystick_left, __joystick_up, __joystick_right, __joystick_dow
   ' Start the engine and wait just in case (probably don't need a full second)
   rgb.start_engine(FPS, @update_frame)
   waitcnt(clkfreq+cnt)
-
+  
+  next_cnt := cnt
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.  
   repeat while end_game == 0 
     if update_frame > 0
+      if cnt < next_cnt
+        waitcnt(next_cnt)
+      'repeat until cnt > next_cnt
       perform_frame_update
+      next_cnt := cnt + clkfreq/FPS
       update_frame := 0
   
   ' Should call stop after game done, so it's put here, but never reached
+  pst.str(string("STOPPING"))
   stop
-
+  pst.str(string("STOPPED"))
 
 '' Stops the game
 PUB stop
@@ -149,17 +155,17 @@ PUB move_apple | X, Y
     Y := cnt + 100
     
     ?X
-    X := ||(X // 14) + 1
+    X := ||(X // 30) + 1
     
     ?Y  
-    Y := ||(Y // 14) + 1
+    Y := ||(Y // 30) + 1
     
     repeat until rgb.get_pixel(X,Y) == off
       ?X
-      X := ||(X // 14) + 1
+      X := ||(X // 30) + 1
     
       ?Y  
-      Y := ||(Y // 14) + 1
+      Y := ||(Y // 30) + 1
 
     rgb.set_pixel (X,Y,red)
 
@@ -175,20 +181,20 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, new_dir, old_head, new_hea
     'Set new direction to first valid found
     'If no valid new direction, don't change
     if (new_dir == LEFT) and (old_dir <> RIGHT)
-      pst.str(string("Setting dir = LEFT"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = LEFT"))
+      'pst.str(string(13))
       dir := LEFT
     elseif (new_dir == UP) and (old_dir <> DOWN)
-      pst.str(string("Setting dir = UP"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = UP"))
+      'pst.str(string(13))
       dir := UP
     elseif (new_dir == RIGHT) and (old_dir <> LEFT)
-      pst.str(string("Setting dir = RIGHT"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = RIGHT"))
+      'pst.str(string(13))
       dir := RIGHT
     elseif (new_dir == DOWN) and (old_dir <> UP)
-      pst.str(string("Setting dir = DOWN"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = DOWN"))
+      'pst.str(string(13))
       dir := DOWN
     
     if dir == RIGHT
@@ -207,6 +213,7 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, new_dir, old_head, new_hea
     snake_Y[new_head] := snake_Y[old_head] + delta_Y
        
     ' debug info
+    {
     pst.str(string("Turning on: ")) 
     pst.dec(snake_X[new_head]) 
     pst.str(string(", ")) 
@@ -223,12 +230,13 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, new_dir, old_head, new_hea
     pst.dec(CNT)
     pst.str(string(13))
     pst.str(string(13))
+    }
     
     if rgb.get_pixel (snake_X[new_head], snake_Y[new_head]) == red
         move_apple
         snake_len++
     elseif rgb.get_pixel(snake_X[new_head], snake_Y[new_head]) <> off
-        pst.str(string("   OUCH!"))
+        'pst.str(string("   OUCH!"))
         waitcnt(clkfreq+cnt)
         stop
     else
