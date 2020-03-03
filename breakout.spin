@@ -37,10 +37,10 @@ VAR
   
   long paddle_pos
   
-  float ball_X
-  float ball_Y
-  float v_x
-  float v_y
+  'float ball_X
+  'float ball_Y
+  'float v_x
+  'float v_y
   
   
 '' Start the game
@@ -54,11 +54,11 @@ PUB start(leds, __joystick_left, __joystick_right)
   
   paddle_pos := 1
   
-  ball_X := 5.0
-  ball_Y := 5.0
+  'ball_X := 5.0
+  'ball_Y := 5.0
   
-  v_x := 1.0
-  v_y := 1.0
+  'v_x := 1.0
+  'v_y := 1.0
   
   'pst.start(9600)
   
@@ -128,14 +128,14 @@ PUB listen(dir_addr)
 
 '' Code to be run every frame
 '' LEDs are not updated until this code is done - make sure it's fast!
-PUB perform_frame_update | i, paddle_dir, new_dir, 
+PUB perform_frame_update | i, paddle_dir, new_dir
 
-    rgb.set_pixel(round(ball_X), round(ball_Y), rgb#off)
+    'rgb.set_pixel(round(ball_X), round(ball_Y), rgb#off)
     
-    ball_X += v_x
-    ball_Y += v_y
+    'ball_X += v_x
+    'ball_Y += v_y
     
-    rgb.set_pixel(round(ball_X), round(ball_Y), rgb#magenta)
+    'rgb.set_pixel(round(ball_X), round(ball_Y), rgb#magenta)
 
     paddle_dir := joy_dir
     if paddle_dir == LEFT and (paddle_pos <> 1)
