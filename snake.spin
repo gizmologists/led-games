@@ -134,6 +134,11 @@ PUB setup_game | x, y
   joy_cog := cognew(listen(@joy_dir), @joy_stack) 
   
 PUB listen(dir_addr)
+    DIRA[joystick_left] := 0
+    DIRA[joystick_up] := 0
+    DIRA[joystick_right] := 0
+    DIRA[joystick_down] := 0
+    
     repeat
         if not ina[joystick_left]
             long[dir_addr] := LEFT
@@ -175,20 +180,20 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, new_dir, old_head, new_hea
     'Set new direction to first valid found
     'If no valid new direction, don't change
     if (new_dir == LEFT) and (old_dir <> RIGHT)
-      pst.str(string("Setting dir = LEFT"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = LEFT"))
+      'pst.str(string(13))
       dir := LEFT
     elseif (new_dir == UP) and (old_dir <> DOWN)
-      pst.str(string("Setting dir = UP"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = UP"))
+      'pst.str(string(13))
       dir := UP
     elseif (new_dir == RIGHT) and (old_dir <> LEFT)
-      pst.str(string("Setting dir = RIGHT"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = RIGHT"))
+      'pst.str(string(13))
       dir := RIGHT
     elseif (new_dir == DOWN) and (old_dir <> UP)
-      pst.str(string("Setting dir = DOWN"))
-      pst.str(string(13))
+      'pst.str(string("Setting dir = DOWN"))
+      'pst.str(string(13))
       dir := DOWN
     
     if dir == RIGHT
@@ -207,28 +212,28 @@ PUB perform_frame_update | delta_X, delta_Y, old_dir, new_dir, old_head, new_hea
     snake_Y[new_head] := snake_Y[old_head] + delta_Y
        
     ' debug info
-    pst.str(string("Turning on: ")) 
-    pst.dec(snake_X[new_head]) 
-    pst.str(string(", ")) 
-    pst.dec(snake_Y[new_head]) 
-    pst.str(string(13))
+    'pst.str(string("Turning on: ")) 
+    'pst.dec(snake_X[new_head]) 
+    'pst.str(string(", ")) 
+    'pst.dec(snake_Y[new_head]) 
+    'pst.str(string(13))
     
-    pst.str(string("Turning off: ")) 
-    pst.dec(snake_X[snake_start]) 
-    pst.str(string(", ")) 
-    pst.dec(snake_Y[snake_start]) 
-    pst.str(string(13))
+    'pst.str(string("Turning off: ")) 
+    'pst.dec(snake_X[snake_start]) 
+    'pst.str(string(", ")) 
+    'pst.dec(snake_Y[snake_start]) 
+   ' pst.str(string(13))
     
-    pst.str(string("Time: "))
-    pst.dec(CNT)
-    pst.str(string(13))
-    pst.str(string(13))
+    'pst.str(string("Time: "))
+    'pst.dec(CNT)
+    'pst.str(string(13))
+    'pst.str(string(13))
     
     if rgb.get_pixel (snake_X[new_head], snake_Y[new_head]) == red
         move_apple
         snake_len++
     elseif rgb.get_pixel(snake_X[new_head], snake_Y[new_head]) <> off
-        pst.str(string("   OUCH!"))
+        'pst.str(string("   OUCH!"))
         waitcnt(clkfreq+cnt)
         stop
     else

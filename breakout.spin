@@ -7,7 +7,7 @@ CON
   chartreuse = 32<<16+16<<8
   dark_green = 32<<16
   
-  LEFT = -1
+  LEFT = 2
   RIGHT = 1
   STALL = 0
   
@@ -23,7 +23,7 @@ OBJ
   pst : "Parallax Serial Terminal"
 
 VAR
-  long update_frame
+  long update_lock
   
   long curr_frame
   long end_game
@@ -49,10 +49,11 @@ VAR
 ' This is needed because no `this` exists in spin - so they have to be different names
 PUB start(leds, __joystick_left, __joystick_right)
   ' Initialize variables
-  update_frame := 0
+  update_lock := locknew
+  lockset(update_lock)
   end_game := 0
   
-  paddle_pos := 1
+  paddle_pos := 2
   
   'ball_X := 5.0
   'ball_Y := 5.0
@@ -60,7 +61,7 @@ PUB start(leds, __joystick_left, __joystick_right)
   'v_x := 1.0
   'v_y := 1.0
   
-  'pst.start(9600)
+  pst.start(9600)
   
   ' Set pin variables - Add more variables if more buttons etc. are needed
   joystick_left := __joystick_left
@@ -73,15 +74,18 @@ PUB start(leds, __joystick_left, __joystick_right)
   setup_game
   
   ' Start the engine and wait just in case (probably don't need a full second)
-  rgb.start_engine(FPS, @update_frame)
+  rgb.start_engine(FPS, update_lock)
   waitcnt(clkfreq+cnt)
 
   ' Main game loop - NOTE this should stop on a condition eg `repeat until game_done` but
   ' don't do that here - this is a demo game after all. But, this loop is run once per frame.  
-  repeat while end_game == 0 
-    if update_frame > 0
-      perform_frame_update
-      update_frame := 0
+  lockclr(update_lock)
+  waitcnt(cnt+clkfreq/30)
+  repeat while end_game == 0
+    repeat until lockset(update_lock)
+    perform_frame_update
+    lockclr(update_lock)
+    waitcnt(cnt+clkfreq/30)
   
   ' Should call stop after game done, so it's put here, but never reached
   stop
@@ -112,12 +116,15 @@ PUB setup_game | x, y
     rgb.set_pixel (x, paddle_height, chartreuse)
   
   ' Draw ball
-  rgb.set_pixel(5, 5, rgb#magenta)
+  rgb.set_pixel(5, 10, rgb#magenta)
   
   ' Start joystick_listener
   joy_cog := cognew(listen(@joy_dir), @joy_stack) 
   
 PUB listen(dir_addr)
+    dira[joystick_left] := 0
+    dira[joystick_right] := 0
+    
     repeat
         if not ina[joystick_left]
             long[dir_addr] := LEFT
@@ -138,12 +145,28 @@ PUB perform_frame_update | i, paddle_dir, new_dir
     'rgb.set_pixel(round(ball_X), round(ball_Y), rgb#magenta)
 
     paddle_dir := joy_dir
-    if paddle_dir == LEFT and (paddle_pos <> 1)
-        rgb.set_pixel(paddle_pos+paddle_length-1, paddle_height, rgb#off)
-        rgb.set_pixel(paddle_pos-1, paddle_height, chartreuse)
-    elseif paddle_dir == RIGHT and (paddle_pos+paddle_length-1 <> 31)
+    pst.dec(paddle_dir)
+    
+    
+    if paddle_dir == RIGHT and (paddle_pos+paddle_length-1 <> 24)
+        'pst.str(string("Joystick RIGHT; Turn off x="))
+        'pst.dec(paddle_pos)
+        'pst.str(string(", Turn on x="))
+        'pst.dec(paddle_pos+paddle_length)
+        'pst.str(string(13))
         rgb.set_pixel(paddle_pos, paddle_height, rgb#off)
         rgb.set_pixel(paddle_pos+paddle_length, paddle_height, chartreuse)
+        paddle_pos := paddle_pos+1
+    if paddle_dir == LEFT and (paddle_pos <> 1)
+        'pst.str(string("Joystick LEFT; Turn off x="))
+        'pst.dec(paddle_pos+paddle_length-1)
+        'pst.str(string(", Turn on x="))
+        'pst.dec(paddle_pos-1)
+        'pst.str(string(13))
+        rgb.set_pixel(paddle_pos+paddle_length-1, paddle_height, rgb#off)
+        rgb.set_pixel(paddle_pos-1, paddle_height, chartreuse)
+        paddle_pos := paddle_pos-1
+    
   
 
 ''Copyright Matt
